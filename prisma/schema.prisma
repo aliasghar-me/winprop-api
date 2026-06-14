@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Profession {
+  developer
+  designer
+  writer
+  sales
+  marketer
+  consultant
+  video
+}
+
+enum Role {
+  owner
+  admin
+  member
+  viewer
+}
+
+enum Plan {
+  free
+  solo
+  pro
+  agency
+}
+
+enum JobStatus {
+  active
+  won
+}
+
+enum DocType {
+  proposal
+}
+
+enum DocStatus {
+  draft
+  ready
+}
+
+enum LlmVendor {
+  openai
+  anthropic
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+}
+
+model Org {
+  id               String          @id @default(cuid())
+  name             String
+  profession       Profession
+  createdAt        DateTime        @default(now())
+  stripeCustomerId String?
+  plan             Plan            @default(free)
+  subStatus        String?
+  memberships      Membership[]
+  profile          Profile?
+  jobs             Job[]
+  subscription     Subscription?
+  generationLogs   GenerationLog[]
+}
+
+model Membership {
+  id     String @id @default(cuid())
+  userId String
+  orgId  String
+  role   Role
+  user   User   @relation(fields: [userId], references: [id])
+  org    Org    @relation(fields: [orgId], references: [id])
+
+  @@unique([userId, orgId])
+}
+
+model Profile {
+  id         String   @id @default(cuid())
+  orgId      String   @unique
+  org        Org      @relation(fields: [orgId], references: [id])
+  services   String[]
+  skills     String[]
+  priceMin   Int      @default(5000)
+  priceMax   Int      @default(40000)
+  tone       String   @default("premium")
+  brandColor String   @default("#6366F1")
+  brandShort String   @default("WP")
+  agencyName String
+}
+
+model Job {
+  id        String     @id @default(cuid())
+  orgId     String
+  org       Org        @relation(fields: [orgId], references: [id])
+  title     String
+  company   String     @default("—")
+  status    JobStatus  @default(active)
+  createdAt DateTime   @default(now())
+  documents Document[]
+}
+
+model Document {
+  id          String    @id @default(cuid())
+  jobId       String
+  job         Job       @relation(fields: [jobId], references: [id])
+  type        DocType   @default(proposal)
+  title       String
+  contentJson Json
+  version     Int       @default(1)
+  status      DocStatus @default(draft)
+  createdAt   DateTime  @default(now())
+}
+
+model Subscription {
+  id               String   @id @default(cuid())
+  orgId            String   @unique
+  org              Org      @relation(fields: [orgId], references: [id])
+  stripeSubId      String   @unique
+  stripePriceId    String
+  status           String
+  currentPeriodEnd DateTime
+}
+
+model LlmConfig {
+  id              String    @id @default(cuid())
+  orgId           String?   @unique
+  provider        LlmVendor
+  apiKeyEncrypted String
+  model           String
+  updatedAt       DateTime  @updatedAt
+}
+
+model GenerationLog {
+  id               String   @id @default(cuid())
+  orgId            String
+  org              Org      @relation(fields: [orgId], references: [id])
+  jobId            String
+  provider         String
+  model            String
+  promptTokens     Int
+  completionTokens Int
+  costUsd          Decimal  @db.Decimal(10, 6)
+  priceMapVersion  String
+  createdAt        DateTime @default(now())
+}
+
+model SuperAdmin {
+  id    String @id @default(cuid())
+  email String @unique
+}
