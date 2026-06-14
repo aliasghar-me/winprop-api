@@ -35,6 +35,14 @@ export class AuthService {
     return this.issueTokens(user.id, org.id, membership.role);
   }
 
+  async login(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { email }, include: { memberships: true } });
+    if (!user || !(await bcrypt.compare(password, user.passwordHash)))
+      throw new AppException(401, 'UNAUTHORIZED', 'Invalid email or password.');
+    const m = user.memberships[0];
+    return this.issueTokens(user.id, m.orgId, m.role);
+  }
+
   issueTokens(userId: string, orgId: string, role: string) {
     const accessToken = this.jwt.sign({ sub: userId, orgId, role }, { expiresIn: '10m' });
     const refreshToken = this.jwt.sign({ sub: userId, orgId, role, typ: 'refresh' }, { expiresIn: '7d' });
