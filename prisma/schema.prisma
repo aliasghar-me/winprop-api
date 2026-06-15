@@ -158,3 +158,8 @@ model SuperAdmin {
   id    String @id @default(cuid())
   email String @unique
 }
+
+model ProcessedEvent {
+  id        String   @id            // Stripe event id
+  createdAt DateTime @default(now())
+}
