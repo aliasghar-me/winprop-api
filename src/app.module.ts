@@ -6,9 +6,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { CryptoModule } from './common/crypto/crypto.module';
 import { AuthModule } from './auth/auth.module';
 import { JobsModule } from './jobs/jobs.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
-  imports: [PrismaModule, CryptoModule, AuthModule, JobsModule],
+  imports: [PrismaModule, CryptoModule, AuthModule, JobsModule, AdminModule],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
