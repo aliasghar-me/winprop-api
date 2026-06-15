@@ -8,9 +8,10 @@ import { AuthModule } from './auth/auth.module';
 import { JobsModule } from './jobs/jobs.module';
 import { AdminModule } from './admin/admin.module';
 import { DocumentsModule } from './documents/documents.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
-  imports: [PrismaModule, CryptoModule, AuthModule, JobsModule, AdminModule, DocumentsModule],
+  imports: [PrismaModule, CryptoModule, AuthModule, JobsModule, AdminModule, DocumentsModule, BillingModule],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
