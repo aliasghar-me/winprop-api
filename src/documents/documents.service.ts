@@ -18,8 +18,14 @@ export class DocumentsService {
     // and only on success — so a failed generation never consumes quota.
     const gen = await this.llm.generateProposal({ ...profile, profession: org!.profession } as any, job);
     let contentJson: any;
-    try { contentJson = JSON.parse(gen.text); }
-    catch { contentJson = { summary: gen.text, scope: [], timelineWeeks: null, priceUsd: null, closing: '' }; }
+    try {
+      contentJson = JSON.parse(gen.text);
+    } catch {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'The AI returned an unreadable response. Please try again.');
+    }
+    if (!contentJson || typeof contentJson !== 'object' || typeof contentJson.summary !== 'string' || contentJson.summary.trim() === '') {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'The AI returned an incomplete response. Please try again.');
+    }
 
     return this.prisma.$transaction(async (tx: any) => {
       const doc = await tx.document.create({
