@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { json } from 'express';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 
@@ -10,6 +11,7 @@ async function bootstrap() {
   // Raw body ONLY for the Stripe webhook (added in a later task); JSON everywhere else.
   app.use('/billing/webhook', json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
   app.use(json());
+  app.use(cookieParser());
   app.enableCors({ origin: process.env.WEB_ORIGIN?.split(',') ?? true, credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
