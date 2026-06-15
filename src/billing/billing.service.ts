@@ -10,7 +10,7 @@ const PRICE_ENV: Record<string, string> = {
 
 @Injectable()
 export class BillingService {
-  constructor(@Inject(STRIPE_CLIENT) private stripe: Stripe, private prisma: PrismaService) {}
+  constructor(@Inject(STRIPE_CLIENT) private stripe: Stripe.Stripe, private prisma: PrismaService) {}
 
   async createCheckout(orgId: string, plan: 'solo' | 'pro' | 'agency') {
     let org = await this.prisma.org.findUnique({ where: { id: orgId } });
