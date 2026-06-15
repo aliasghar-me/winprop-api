@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles';
 import { CurrentUser } from '../auth/decorators/current-user';
-import { JwtUser } from '../auth/jwt.strategy';
+import type { JwtUser } from '../auth/jwt.strategy';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 
