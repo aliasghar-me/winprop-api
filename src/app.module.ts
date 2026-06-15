@@ -7,9 +7,10 @@ import { CryptoModule } from './common/crypto/crypto.module';
 import { AuthModule } from './auth/auth.module';
 import { JobsModule } from './jobs/jobs.module';
 import { AdminModule } from './admin/admin.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
-  imports: [PrismaModule, CryptoModule, AuthModule, JobsModule, AdminModule],
+  imports: [PrismaModule, CryptoModule, AuthModule, JobsModule, AdminModule, DocumentsModule],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
