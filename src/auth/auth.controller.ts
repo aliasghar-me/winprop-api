@@ -1,4 +1,5 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -6,8 +7,26 @@ import { LoginDto } from './dto/login.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
+
+  private setRefresh(res: Response, token: string) {
+    res.cookie('refresh', token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 3600 * 1000 });
+  }
+
   @Post('signup')
-  signup(@Body() dto: SignupDto) { return this.auth.signup(dto); }
+  async signup(@Body() dto: SignupDto, @Res({ passthrough: true }) res: Response) {
+    const t = await this.auth.signup(dto); this.setRefresh(res, t.refreshToken);
+    return { accessToken: t.accessToken };
+  }
+
   @Post('login')
-  login(@Body() dto: LoginDto) { return this.auth.login(dto.email, dto.password); }
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const t = await this.auth.login(dto.email, dto.password); this.setRefresh(res, t.refreshToken);
+    return { accessToken: t.accessToken };
+  }
+
+  @Post('refresh')
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const t = await this.auth.refresh(req.cookies?.refresh); this.setRefresh(res, t.refreshToken);
+    return { accessToken: t.accessToken };
+  }
 }

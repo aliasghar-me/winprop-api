@@ -48,4 +48,11 @@ export class AuthService {
     const refreshToken = this.jwt.sign({ sub: userId, orgId, role, typ: 'refresh' }, { expiresIn: '7d' });
     return { accessToken, refreshToken };
   }
+
+  async refresh(refreshToken: string) {
+    let payload: any;
+    try { payload = this.jwt.verify(refreshToken); } catch { throw new AppException(401, 'UNAUTHORIZED', 'Invalid refresh token.'); }
+    if (payload.typ !== 'refresh') throw new AppException(401, 'UNAUTHORIZED', 'Invalid refresh token.');
+    return this.issueTokens(payload.sub, payload.orgId, payload.role);
+  }
 }
