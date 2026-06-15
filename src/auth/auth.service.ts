@@ -53,6 +53,10 @@ export class AuthService {
     let payload: any;
     try { payload = this.jwt.verify(refreshToken); } catch { throw new AppException(401, 'UNAUTHORIZED', 'Invalid refresh token.'); }
     if (payload.typ !== 'refresh') throw new AppException(401, 'UNAUTHORIZED', 'Invalid refresh token.');
-    return this.issueTokens(payload.sub, payload.orgId, payload.role);
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_orgId: { userId: payload.sub, orgId: payload.orgId } },
+    });
+    if (!membership) throw new AppException(401, 'UNAUTHORIZED', 'Access revoked.');
+    return this.issueTokens(payload.sub, payload.orgId, membership.role); // CURRENT role
   }
 }
