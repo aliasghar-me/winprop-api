@@ -2,7 +2,7 @@ import { Body, Controller, Headers, HttpCode, Post, Req, UseGuards } from '@nest
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user';
-import { JwtUser } from '../auth/jwt.strategy';
+import type { JwtUser } from '../auth/jwt.strategy';
 import { BillingService } from './billing.service';
 import { CheckoutDto } from './dto/checkout.dto';
 
