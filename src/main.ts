@@ -1,8 +1,20 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { json } from 'express';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  // Raw body ONLY for the Stripe webhook (added in a later task); JSON everywhere else.
+  app.use('/billing/webhook', json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
+  app.use(json());
+  app.enableCors({ origin: process.env.WEB_ORIGIN?.split(',') ?? true, credentials: true });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new AllExceptionsFilter());
+  const doc = SwaggerModule.createDocument(app, new DocumentBuilder().setTitle('WinProp API').setVersion('1').addBearerAuth().build());
+  SwaggerModule.setup('docs', app, doc);
+  await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();
