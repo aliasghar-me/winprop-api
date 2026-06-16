@@ -33,6 +33,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma.config.ts ./
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/dist ./dist
+# i18n locale files: the loader resolves `process.cwd()/src/i18n`, so they must exist
+# at /app/src/i18n in the runner (source isn't otherwise copied). Without this the API
+# silently falls back to English in production.
+COPY --from=builder /app/src/i18n ./src/i18n
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
