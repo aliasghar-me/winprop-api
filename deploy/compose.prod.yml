@@ -1,0 +1,63 @@
+name: winprop-prod
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-winprop}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-winprop_prod}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-winprop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  api:
+    image: ghcr.io/${GHCR_OWNER}/winprop-api:${IMAGE_TAG:-prod}
+    restart: unless-stopped
+    env_file:
+      - /opt/winprop/.env.prod
+    expose:
+      - "3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - /opt/winprop/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_prod_data:/data
+      - caddy_prod_config:/config
+    depends_on:
+      - api
+    networks:
+      - internal
+
+volumes:
+  postgres_prod_data:
+  caddy_prod_data:
+  caddy_prod_config:
+
+networks:
+  internal:
+    driver: bridge

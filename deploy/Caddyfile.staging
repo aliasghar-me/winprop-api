@@ -1,0 +1,15 @@
+api-staging.yourdomain.com {
+    # Automatic HTTPS via Let's Encrypt.
+    # Replace yourdomain.com with your actual domain.
+
+    # The Stripe webhook body must arrive byte-for-byte unmodified.
+    # Caddy's reverse_proxy preserves the raw body — no special config needed.
+    reverse_proxy api:3001
+
+    encode gzip
+
+    log {
+        output stderr
+        level INFO
+    }
+}
