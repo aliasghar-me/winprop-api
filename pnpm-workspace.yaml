@@ -1,5 +1,9 @@
+# pnpm 11 build-script approval policy (map of package -> allowed).
+# true  = run its install/build script (native bindings / prisma engines need this)
+# false = explicitly skip without erroring (telemetry-only packages)
 allowBuilds:
   '@prisma/engines': true
   bcrypt: true
   prisma: true
   unrs-resolver: true
+  '@scarf/scarf': false
