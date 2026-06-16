@@ -19,16 +19,16 @@ export class LlmService {
 
   async generateProposal(profile: Profile & { profession?: string }, job: Job) {
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
-    if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'No LLM provider is configured. Ask the platform admin.');
+    if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.providers.find((p) => p.vendor === cfg.provider);
-    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', `Provider ${cfg.provider} not available.`);
+    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
     const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
     const messages = buildProposalPrompt(profile, job);
     let result;
     try {
       result = await provider.generate(cfg.model, apiKey, messages);
     } catch (e: any) {
-      throw new AppException(502, 'LLM_PROVIDER_ERROR', `Generation failed: ${e.message}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed', { message: e.message });
     }
     return {
       text: result.text,

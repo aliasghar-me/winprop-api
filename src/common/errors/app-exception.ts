@@ -6,7 +6,12 @@ export type AppErrorCode =
   | 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION';
 
 export class AppException extends HttpException {
-  constructor(statusCode: number, public code: AppErrorCode, message: string) {
-    super({ statusCode, code, message }, statusCode);
+  constructor(
+    statusCode: number,
+    public code: AppErrorCode,
+    public translationKey: string,
+    public args?: Record<string, any>,
+  ) {
+    super({ statusCode, code, translationKey, args }, statusCode);
   }
 }

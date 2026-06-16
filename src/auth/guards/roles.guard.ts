@@ -11,7 +11,7 @@ export class RolesGuard implements CanActivate {
     const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [ctx.getHandler(), ctx.getClass()]);
     if (!required || required.length === 0) return true;
     const { user } = ctx.switchToHttp().getRequest();
-    if (!user || !required.includes(user.role)) throw new AppException(403, 'FORBIDDEN', 'Your role cannot perform this action.');
+    if (!user || !required.includes(user.role)) throw new AppException(403, 'FORBIDDEN', 'errors.roleForbidden');
     return true;
   }
 }

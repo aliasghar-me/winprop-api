@@ -41,7 +41,7 @@ export class BillingService {
     try {
       event = this.stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy');
     } catch (e: any) {
-      throw new AppException(400, 'VALIDATION', 'Invalid webhook signature.');
+      throw new AppException(400, 'VALIDATION', 'errors.invalidWebhookSignature');
     }
     // idempotency: store-and-skip. If already processed, do NOTHING.
     const seen = await this.prisma.processedEvent.findUnique({ where: { id: event.id } }).catch(() => null);

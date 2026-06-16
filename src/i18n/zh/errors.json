@@ -1,0 +1,21 @@
+{
+  "llmNotConfigured": "未配置 LLM 提供商。请联系平台管理员。",
+  "llmProviderUnavailable": "提供商 {provider} 不可用。",
+  "llmGenerationFailed": "生成失败：{message}",
+  "llmUnreadable": "AI 返回了无法读取的响应。请重试。",
+  "llmIncomplete": "AI 返回了不完整的响应。请重试。",
+  "emailInUse": "电子邮件已被使用。",
+  "invalidCredentials": "无效的电子邮件或密码。",
+  "invalidRefreshToken": "无效的刷新令牌。",
+  "accessRevoked": "访问已被撤销。",
+  "roleForbidden": "您的角色无法执行此操作。",
+  "superAdminOnly": "仅限超级管理员。",
+  "orgNotFound": "组织未找到。",
+  "subscriptionInactive": "您的订阅已失效。请更新付款以继续。",
+  "quotaExceeded": "您已达到本期计划限制 {limit} 次生成。",
+  "profileNotFound": "未找到个人资料。",
+  "documentNotFound": "文档未找到。",
+  "jobNotFound": "职位未找到。",
+  "duplicateName": "您已有名为\"{name}\"的职位。名称必须唯一。",
+  "invalidWebhookSignature": "无效的 webhook 签名。"
+}

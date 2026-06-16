@@ -277,6 +277,36 @@
           "Billing"
         ]
       }
+    },
+    "/me/language": {
+      "patch": {
+        "operationId": "UsersController_setLanguage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLanguageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set preferred language for the authenticated user",
+        "tags": [
+          "me"
+        ]
+      }
     }
   },
   "info": {
@@ -313,6 +343,10 @@
         "properties": {}
       },
       "CheckoutDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateLanguageDto": {
         "type": "object",
         "properties": {}
       }

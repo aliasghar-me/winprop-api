@@ -1,0 +1,21 @@
+{
+  "llmNotConfigured": "Nenhum provedor LLM está configurado. Contate o administrador.",
+  "llmProviderUnavailable": "O provedor {provider} não está disponível.",
+  "llmGenerationFailed": "Falha na geração: {message}",
+  "llmUnreadable": "A IA retornou uma resposta ilegível. Por favor, tente novamente.",
+  "llmIncomplete": "A IA retornou uma resposta incompleta. Por favor, tente novamente.",
+  "emailInUse": "E-mail já em uso.",
+  "invalidCredentials": "E-mail ou senha inválidos.",
+  "invalidRefreshToken": "Token de atualização inválido.",
+  "accessRevoked": "Acesso revogado.",
+  "roleForbidden": "Seu papel não pode executar esta ação.",
+  "superAdminOnly": "Apenas para super-administradores.",
+  "orgNotFound": "Organização não encontrada.",
+  "subscriptionInactive": "Sua assinatura está inativa. Atualize o pagamento para continuar.",
+  "quotaExceeded": "Você atingiu o limite do seu plano de {limit} gerações neste período.",
+  "profileNotFound": "Perfil não encontrado.",
+  "documentNotFound": "Documento não encontrado.",
+  "jobNotFound": "Vaga não encontrada.",
+  "duplicateName": "Você já tem uma vaga chamada \"{name}\". Os nomes devem ser únicos.",
+  "invalidWebhookSignature": "Assinatura de webhook inválida."
+}

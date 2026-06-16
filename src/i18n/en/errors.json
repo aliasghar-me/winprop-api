@@ -1,0 +1,21 @@
+{
+  "llmNotConfigured": "No LLM provider is configured. Ask the platform admin.",
+  "llmProviderUnavailable": "Provider {provider} is not available.",
+  "llmGenerationFailed": "Generation failed: {message}",
+  "llmUnreadable": "The AI returned an unreadable response. Please try again.",
+  "llmIncomplete": "The AI returned an incomplete response. Please try again.",
+  "emailInUse": "Email already in use.",
+  "invalidCredentials": "Invalid email or password.",
+  "invalidRefreshToken": "Invalid refresh token.",
+  "accessRevoked": "Access revoked.",
+  "roleForbidden": "Your role cannot perform this action.",
+  "superAdminOnly": "Super-admin only.",
+  "orgNotFound": "Organization not found.",
+  "subscriptionInactive": "Your subscription is inactive. Update payment to continue.",
+  "quotaExceeded": "You have reached your plan limit of {limit} generations this period.",
+  "profileNotFound": "Profile not found.",
+  "documentNotFound": "Document not found.",
+  "jobNotFound": "Job not found.",
+  "duplicateName": "You already have a job named \"{name}\". Names must be unique.",
+  "invalidWebhookSignature": "Invalid webhook signature."
+}

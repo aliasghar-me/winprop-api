@@ -1,0 +1,21 @@
+{
+  "llmNotConfigured": "कोई LLM प्रदाता कॉन्फ़िगर नहीं किया गया है। प्लेटफ़ॉर्म व्यवस्थापक से संपर्क करें।",
+  "llmProviderUnavailable": "प्रदाता {provider} उपलब्ध नहीं है।",
+  "llmGenerationFailed": "उत्पादन विफल: {message}",
+  "llmUnreadable": "AI ने अपठनीय प्रतिक्रिया दी। कृपया पुनः प्रयास करें।",
+  "llmIncomplete": "AI ने अधूरी प्रतिक्रिया दी। कृपया पुनः प्रयास करें।",
+  "emailInUse": "ईमेल पहले से उपयोग में है।",
+  "invalidCredentials": "अमान्य ईमेल या पासवर्ड।",
+  "invalidRefreshToken": "अमान्य रिफ्रेश टोकन।",
+  "accessRevoked": "एक्सेस रद्द कर दी गई।",
+  "roleForbidden": "आपकी भूमिका यह कार्य नहीं कर सकती।",
+  "superAdminOnly": "केवल सुपर-एडमिन के लिए।",
+  "orgNotFound": "संगठन नहीं मिला।",
+  "subscriptionInactive": "आपकी सदस्यता निष्क्रिय है। जारी रखने के लिए भुगतान अपडेट करें।",
+  "quotaExceeded": "आपने इस अवधि में {limit} उत्पादन की सीमा पार कर ली है।",
+  "profileNotFound": "प्रोफ़ाइल नहीं मिली।",
+  "documentNotFound": "दस्तावेज़ नहीं मिला।",
+  "jobNotFound": "नौकरी नहीं मिली।",
+  "duplicateName": "आपके पास पहलेसे \"{name}\" नाम की नौकरी है। नाम अद्वितीय होने चाहिए।",
+  "invalidWebhookSignature": "अमान्य वेबहुक हस्ताक्षर।"
+}
