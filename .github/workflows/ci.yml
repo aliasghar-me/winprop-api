@@ -1,0 +1,73 @@
+name: API CI
+
+on:
+  pull_request:
+  push:
+    branches: ["**"]
+
+jobs:
+  test:
+    name: Lint / Build / Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: winprop
+          POSTGRES_PASSWORD: winprop_ci
+          POSTGRES_DB: winprop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U winprop"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://winprop:winprop_ci@localhost:5432/winprop_test
+      JWT_SECRET: ci-jwt-secret-not-used-in-production
+      # 64 hex chars — fixed test value, not a real secret
+      ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
+      STRIPE_SECRET_KEY: sk_test_dummy_ci
+      STRIPE_WEBHOOK_SECRET: whsec_dummy_ci
+      STRIPE_PRICE_SOLO: price_dummy_solo
+      STRIPE_PRICE_PRO: price_dummy_pro
+      STRIPE_PRICE_AGENCY: price_dummy_agency
+      PORT: "3001"
+      WEB_ORIGIN: "http://localhost:3000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma migrate deploy
+        run: pnpm prisma migrate deploy
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+
+      - name: Lint i18n
+        run: pnpm lint:i18n
+
+      - name: Build
+        run: pnpm build
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: E2E tests
+        run: pnpm test:e2e
