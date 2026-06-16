@@ -1,0 +1,21 @@
+{
+  "llmNotConfigured": "Aucun fournisseur LLM n'est configuré. Contactez l'administrateur.",
+  "llmProviderUnavailable": "Le fournisseur {provider} n'est pas disponible.",
+  "llmGenerationFailed": "Échec de la génération : {message}",
+  "llmUnreadable": "L'IA a renvoyé une réponse illisible. Veuillez réessayer.",
+  "llmIncomplete": "L'IA a renvoyé une réponse incomplète. Veuillez réessayer.",
+  "emailInUse": "L'adresse e-mail est déjà utilisée.",
+  "invalidCredentials": "E-mail ou mot de passe invalide.",
+  "invalidRefreshToken": "Jeton de rafraîchissement invalide.",
+  "accessRevoked": "Accès révoqué.",
+  "roleForbidden": "Votre rôle ne peut pas effectuer cette action.",
+  "superAdminOnly": "Réservé aux super-administrateurs.",
+  "orgNotFound": "Organisation introuvable.",
+  "subscriptionInactive": "Votre abonnement est inactif. Mettez à jour le paiement pour continuer.",
+  "quotaExceeded": "Vous avez atteint la limite de votre plan de {limit} générations pour cette période.",
+  "profileNotFound": "Profil introuvable.",
+  "documentNotFound": "Document introuvable.",
+  "jobNotFound": "Offre d'emploi introuvable.",
+  "duplicateName": "Vous avez déjà une offre d'emploi nommée \"{name}\". Les noms doivent être uniques.",
+  "invalidWebhookSignature": "Signature webhook invalide."
+}

@@ -1,0 +1,21 @@
+{
+  "llmNotConfigured": "کوئی LLM فراہم کنندہ ترتیب نہیں دیا گیا۔ پلیٹ فارم ایڈمن سے رابطہ کریں۔",
+  "llmProviderUnavailable": "فراہم کنندہ {provider} دستیاب نہیں ہے۔",
+  "llmGenerationFailed": "تخلیق ناکام ہوئی: {message}",
+  "llmUnreadable": "AI نے ناقابل پڑھ جواب دیا۔ دوبارہ کوشش کریں۔",
+  "llmIncomplete": "AI نے ادھورا جواب دیا۔ دوبارہ کوشش کریں۔",
+  "emailInUse": "ای میل پہلے سے استعمال میں ہے۔",
+  "invalidCredentials": "غلط ای میل یا پاس ورڈ۔",
+  "invalidRefreshToken": "غلط ریفریش ٹوکن۔",
+  "accessRevoked": "رسائی منسوخ کر دی گئی۔",
+  "roleForbidden": "آپ کا کردار یہ کام نہیں کر سکتا۔",
+  "superAdminOnly": "صرف سپر ایڈمن کے لیے۔",
+  "orgNotFound": "تنظیم نہیں ملی۔",
+  "subscriptionInactive": "آپ کی سبسکرپشن غیر فعال ہے۔ جاری رکھنے کے لیے ادائیگی اپڈیٹ کریں۔",
+  "quotaExceeded": "آپ اس مدت میں {limit} تخلیقات کی حد تک پہنچ گئے ہیں۔",
+  "profileNotFound": "پروفائل نہیں ملا۔",
+  "documentNotFound": "دستاویز نہیں ملی۔",
+  "jobNotFound": "کام نہیں ملا۔",
+  "duplicateName": "آپ کے پاس پہلے سے \"{name}\" نام کا کام موجود ہے۔ نام منفرد ہونے چاہیں۔",
+  "invalidWebhookSignature": "غلط ویب ہک دستخط۔"
+}

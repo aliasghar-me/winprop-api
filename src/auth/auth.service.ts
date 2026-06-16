@@ -21,7 +21,7 @@ export class AuthService {
 
   async signup(dto: SignupDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (existing) throw new AppException(400, 'VALIDATION', 'Email already in use.');
+    if (existing) throw new AppException(400, 'VALIDATION', 'errors.emailInUse');
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const defs = PROFESSION_DEFAULTS[dto.profession];
 
@@ -38,7 +38,7 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email }, include: { memberships: true } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash)))
-      throw new AppException(401, 'UNAUTHORIZED', 'Invalid email or password.');
+      throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidCredentials');
     const m = user.memberships[0];
     return this.issueTokens(user.id, m.orgId, m.role);
   }
@@ -51,12 +51,12 @@ export class AuthService {
 
   async refresh(refreshToken: string) {
     let payload: any;
-    try { payload = this.jwt.verify(refreshToken); } catch { throw new AppException(401, 'UNAUTHORIZED', 'Invalid refresh token.'); }
-    if (payload.typ !== 'refresh') throw new AppException(401, 'UNAUTHORIZED', 'Invalid refresh token.');
+    try { payload = this.jwt.verify(refreshToken); } catch { throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidRefreshToken'); }
+    if (payload.typ !== 'refresh') throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidRefreshToken');
     const membership = await this.prisma.membership.findUnique({
       where: { userId_orgId: { userId: payload.sub, orgId: payload.orgId } },
     });
-    if (!membership) throw new AppException(401, 'UNAUTHORIZED', 'Access revoked.');
+    if (!membership) throw new AppException(401, 'UNAUTHORIZED', 'errors.accessRevoked');
     return this.issueTokens(payload.sub, payload.orgId, membership.role); // CURRENT role
   }
 }

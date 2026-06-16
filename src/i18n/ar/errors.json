@@ -1,0 +1,21 @@
+{
+  "llmNotConfigured": "لم يتم تكوين أي موفر LLM. اتصل بمسؤول النظام.",
+  "llmProviderUnavailable": "الموفر {provider} غير متاح.",
+  "llmGenerationFailed": "فشل الإنشاء: {message}",
+  "llmUnreadable": "أعاد الذكاء الاصطناعي استجابة غير قابلة للقراءة. يرجى المحاولة مرة أخرى.",
+  "llmIncomplete": "أعاد الذكاء الاصطناعي استجابة غير مكتملة. يرجى المحاولة مرة أخرى.",
+  "emailInUse": "البريد الإلكتروني مستخدم بالفعل.",
+  "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+  "invalidRefreshToken": "رمز التحديث غير صالح.",
+  "accessRevoked": "تم إلغاء الوصول.",
+  "roleForbidden": "دورك لا يمكنه تنفيذ هذا الإجراء.",
+  "superAdminOnly": "للمسؤول الأعلى فقط.",
+  "orgNotFound": "المنظمة غير موجودة.",
+  "subscriptionInactive": "اشتراكك غير نشط. قم بتحديث الدفع للمتابعة.",
+  "quotaExceeded": "لقد وصلت إلى حد خطتك البالغ {limit} عمليات إنشاء في هذه الفترة.",
+  "profileNotFound": "الملف الشخصي غير موجود.",
+  "documentNotFound": "المستند غير موجود.",
+  "jobNotFound": "الوظيفة غير موجودة.",
+  "duplicateName": "لديك بالفعل وظيفة باسم \"{name}\". يجب أن تكون الأسماء فريدة.",
+  "invalidWebhookSignature": "توقيع webhook غير صالح."
+}
