@@ -88,4 +88,31 @@ describe('Billing webhook (durable inbox, async processing)', () => {
     expect(await waitForStatus('evt_crash', 'done')).toBe('done'); // == processor restart drain
     expect(await prisma.processedEvent.findUnique({ where: { id: 'evt_crash' } })).not.toBeNull();
   });
+
+  it('reclaims a row stuck in processing by a crashed worker (H1)', async () => {
+    // Simulate: a worker claimed the row (status=processing) then died before finishing.
+    const evt = makeEvent(orgId);
+    evt.id = 'evt_stuck'; evt.data.object.id = 'sub_stuck';
+    await prisma.webhookEvent.create({
+      data: {
+        id: evt.id, type: evt.type, payload: evt as any,
+        status: 'processing', attempts: 1,
+        claimedAt: new Date(Date.now() - 10 * 60_000), // claimed 10 min ago → past the stuck window
+      },
+    });
+
+    expect(await waitForStatus('evt_stuck', 'done')).toBe('done');
+    expect(await prisma.processedEvent.findUnique({ where: { id: 'evt_stuck' } })).not.toBeNull();
+  });
+
+  it('does NOT reclaim a freshly-claimed processing row (still in flight)', async () => {
+    const evt = makeEvent(orgId);
+    evt.id = 'evt_inflight';
+    await prisma.webhookEvent.create({
+      data: { id: evt.id, type: evt.type, payload: evt as any, status: 'processing', attempts: 1, claimedAt: new Date() },
+    });
+    await billing.drainPending();
+    const row = await prisma.webhookEvent.findUnique({ where: { id: 'evt_inflight' } });
+    expect(row?.status).toBe('processing'); // untouched — another worker owns it
+  });
 });
