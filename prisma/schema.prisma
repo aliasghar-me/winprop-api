@@ -234,6 +234,7 @@ model WebhookEvent {
   attempts    Int           @default(0)
   lastError   String?
   createdAt   DateTime      @default(now())
+  claimedAt   DateTime?     // when a worker last took the row into `processing`
   processedAt DateTime?
 
   @@index([status])
