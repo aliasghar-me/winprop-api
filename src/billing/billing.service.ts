@@ -10,6 +10,9 @@ const PRICE_ENV: Record<string, string> = {
 
 const MAX_ATTEMPTS = 5;
 const DRAIN_BATCH = 20;
+// A row claimed into `processing` but not finished within this window is assumed
+// abandoned by a crashed worker and becomes eligible for reclaim (H1).
+const STUCK_AFTER_MS = Number(process.env.WEBHOOK_STUCK_AFTER_MS ?? 120_000);
 
 @Injectable()
 export class BillingService {
@@ -77,36 +80,57 @@ export class BillingService {
 
   // Drains queued webhook rows. Safe to run concurrently / repeatedly: each row is
   // claimed with a conditional status transition, so no event is processed twice.
+  // Eligible rows: never-started (pending), previously-failed under the retry cap,
+  // or stuck in `processing` past STUCK_AFTER_MS (a worker that claimed then crashed).
   async drainPending(): Promise<number> {
+    const stuckCutoff = new Date(Date.now() - STUCK_AFTER_MS);
     const due = await this.prisma.webhookEvent.findMany({
-      where: { OR: [{ status: 'pending' }, { status: 'failed', attempts: { lt: MAX_ATTEMPTS } }] },
+      where: {
+        OR: [
+          { status: 'pending' },
+          { status: 'failed', attempts: { lt: MAX_ATTEMPTS } },
+          { status: 'processing', attempts: { lt: MAX_ATTEMPTS }, claimedAt: { lt: stuckCutoff } },
+        ],
+      },
       orderBy: { createdAt: 'asc' },
       take: DRAIN_BATCH,
     });
 
     let processed = 0;
     for (const row of due) {
-      // Claim: only the worker that flips pending/failed -> processing owns this row.
+      // Claim atomically. `attempts` is bumped HERE (not on completion) so a row that
+      // keeps crashing mid-processing is still bounded by MAX_ATTEMPTS. The claimedAt
+      // guard makes reclaim of a stuck row a single-winner race.
       const claim = await this.prisma.webhookEvent.updateMany({
-        where: { id: row.id, status: { in: ['pending', 'failed'] } },
-        data: { status: 'processing' },
+        where: {
+          id: row.id,
+          attempts: { lt: MAX_ATTEMPTS },
+          OR: [{ status: { in: ['pending', 'failed'] } }, { status: 'processing', claimedAt: { lt: stuckCutoff } }],
+        },
+        data: { status: 'processing', claimedAt: new Date(), attempts: { increment: 1 } },
       });
-      if (claim.count === 0) continue; // another drain took it
+      if (claim.count === 0) continue; // another worker took it (or it hit the cap)
 
       try {
         await this.processEvent(row.payload as any);
         await this.prisma.webhookEvent.update({
           where: { id: row.id },
-          data: { status: 'done', processedAt: new Date(), lastError: null, attempts: { increment: 1 } },
+          data: { status: 'done', processedAt: new Date(), lastError: null },
         });
         processed++;
       } catch (e: any) {
-        const attempts = row.attempts + 1;
+        const attempts = row.attempts + 1; // reflects the increment applied at claim time
         await this.prisma.webhookEvent.update({
           where: { id: row.id },
-          data: { status: 'failed', attempts, lastError: String(e?.message ?? e).slice(0, 500) },
+          data: { status: 'failed', lastError: String(e?.message ?? e).slice(0, 500) },
         });
-        this.logger.error(`webhook ${row.id} failed (attempt ${attempts}/${MAX_ATTEMPTS}): ${e?.message ?? e}`);
+        if (attempts >= MAX_ATTEMPTS) {
+          // Dead-letter: exhausted retries. The row stays `status=failed` as a queryable
+          // DLQ; surface it loudly so it can be investigated/replayed manually.
+          this.logger.error(`webhook ${row.id} DEAD-LETTERED after ${attempts} attempts: ${e?.message ?? e}`);
+        } else {
+          this.logger.error(`webhook ${row.id} failed (attempt ${attempts}/${MAX_ATTEMPTS}): ${e?.message ?? e}`);
+        }
       }
     }
     return processed;
