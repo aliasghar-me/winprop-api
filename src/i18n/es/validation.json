@@ -1,0 +1,9 @@
+{
+  "isEmail": "{property} debe ser una dirección de correo electrónico válida.",
+  "isString": "{property} debe ser texto.",
+  "isNotEmpty": "{property} es obligatorio.",
+  "minLength": "{property} debe tener al menos {0} caracteres.",
+  "maxLength": "{property} debe tener como máximo {0} caracteres.",
+  "isEnum": "{property} debe ser un valor válido.",
+  "isIn": "{property} debe ser uno de los valores permitidos."
+}

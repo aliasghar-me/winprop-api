@@ -1,2 +1,5 @@
 import { IsIn } from 'class-validator';
-export class CheckoutDto { @IsIn(['solo', 'pro', 'agency']) plan: 'solo' | 'pro' | 'agency'; }
+import { i18nValidationMessage } from 'nestjs-i18n';
+export class CheckoutDto {
+  @IsIn(['solo', 'pro', 'agency'], { message: i18nValidationMessage('validation.isIn') }) plan: 'solo' | 'pro' | 'agency';
+}

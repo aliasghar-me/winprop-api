@@ -50,13 +50,31 @@ enum LlmVendor {
 }
 
 model User {
-  id                String       @id @default(cuid())
-  email             String       @unique
+  id                String         @id @default(cuid())
+  email             String         @unique
   passwordHash      String
   name              String
   preferredLanguage String?
-  createdAt         DateTime     @default(now())
+  createdAt         DateTime       @default(now())
   memberships       Membership[]
+  refreshTokens     RefreshToken[]
+}
+
+// H5: server-side refresh-token store for hard revocation + rotation. Each issued
+// refresh JWT carries a `jti` matching a row here. Refresh rotates (revokes the old
+// jti, issues a new one); presenting an already-revoked jti is treated as token
+// theft and revokes the user's whole chain. Logout revokes the presented jti.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  jti          String    @unique
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revokedAt    DateTime?
+  replacedById String?   // jti that superseded this one (rotation chain)
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Org {
@@ -156,11 +174,67 @@ model GenerationLog {
 }
 
 model SuperAdmin {
-  id    String @id @default(cuid())
-  email String @unique
+  id           String              @id @default(cuid())
+  email        String              @unique
+  // H3: real auth. Nullable so the legacy seed row keeps working until a password
+  // is set; login is refused for rows without a hash.
+  passwordHash String?
+  createdAt    DateTime            @default(now())
+  auditLogs    SuperAdminAuditLog[]
+}
+
+// H3: audit trail for the super-admin surface. Every authenticated /admin call is
+// recorded (never the request body — it can carry secrets like LLM API keys).
+model SuperAdminAuditLog {
+  id           String     @id @default(cuid())
+  superAdminId String
+  superAdmin   SuperAdmin @relation(fields: [superAdminId], references: [id])
+  action       String     // e.g. "PUT /admin/llm-config"
+  ip           String?
+  createdAt    DateTime   @default(now())
+
+  @@index([superAdminId, createdAt])
+}
+
+// Atomic per-period quota counter (H2). Replaces counting GenerationLog rows,
+// which had a check-then-insert race: two concurrent generations at the limit
+// boundary could both pass. The guard reserves a slot with a single atomic
+// INSERT .. ON CONFLICT DO UPDATE .. WHERE used < limit, so concurrency can
+// never exceed the plan limit. A failed generation releases its reservation.
+model QuotaPeriod {
+  id          String   @id @default(cuid())
+  orgId       String
+  periodStart DateTime
+  used        Int      @default(0)
+
+  @@unique([orgId, periodStart])
 }
 
 model ProcessedEvent {
   id        String   @id            // Stripe event id
   createdAt DateTime @default(now())
+}
+
+enum WebhookStatus {
+  pending
+  processing
+  done
+  failed
+}
+
+// Durable inbox for Stripe webhooks (H1). The webhook endpoint verifies the
+// signature, persists the event here, and acks immediately (202). A background
+// processor drains pending rows — so a slow/failed DB write can no longer make
+// Stripe time out and retry, and unprocessed events survive a crash/restart.
+model WebhookEvent {
+  id          String        @id            // Stripe event id (dedup key)
+  type        String
+  payload     Json
+  status      WebhookStatus @default(pending)
+  attempts    Int           @default(0)
+  lastError   String?
+  createdAt   DateTime      @default(now())
+  processedAt DateTime?
+
+  @@index([status])
 }
