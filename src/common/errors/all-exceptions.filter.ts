@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
 import { Response } from 'express';
-import { I18nContext } from 'nestjs-i18n';
+import { I18nContext, I18nValidationException } from 'nestjs-i18n';
 import { AppException } from './app-exception.js';
 
 // English fallback map — avoids JSON import issues with nodenext modules
@@ -37,6 +37,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse<Response>();
 
+    // H8: I18nValidationPipe throws this with already-localized constraint messages.
+    // Flatten them into our standard { statusCode, code, message } envelope.
+    if (exception instanceof I18nValidationException) {
+      const messages = this.collectConstraints(exception.errors ?? []);
+      return res.status(400).json({
+        statusCode: 400,
+        code: 'VALIDATION',
+        message: messages.join(', ') || 'Validation failed',
+      });
+    }
+
     if (exception instanceof AppException) {
       const status = exception.getStatus();
       const i18n = I18nContext.current();
@@ -70,6 +81,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     return res.status(500).json({ statusCode: 500, code: 'INTERNAL', message: 'Internal error' });
+  }
+
+  // Depth-first collect of translated constraint strings across nested errors.
+  private collectConstraints(errors: any[]): string[] {
+    const out: string[] = [];
+    for (const e of errors) {
+      if (e?.constraints) out.push(...Object.values<string>(e.constraints));
+      if (e?.children?.length) out.push(...this.collectConstraints(e.children));
+    }
+    return out;
   }
 
   private defaultCode(status: number) {

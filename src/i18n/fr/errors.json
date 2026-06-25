@@ -15,7 +15,7 @@
   "quotaExceeded": "Vous avez atteint la limite de votre plan de {limit} générations pour cette période.",
   "profileNotFound": "Profil introuvable.",
   "documentNotFound": "Document introuvable.",
-  "jobNotFound": "Offre d'emploi introuvable.",
-  "duplicateName": "Vous avez déjà une offre d'emploi nommée \"{name}\". Les noms doivent être uniques.",
+  "jobNotFound": "Mission introuvable.",
+  "duplicateName": "Vous avez déjà une mission nommée \"{name}\". Les noms doivent être uniques.",
   "invalidWebhookSignature": "Signature webhook invalide."
 }
