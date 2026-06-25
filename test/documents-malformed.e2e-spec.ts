@@ -18,7 +18,7 @@ async function setup(llmText: string) {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true })); app.useGlobalFilters(new AllExceptionsFilter());
   await app.init();
   const prisma = app.get(PrismaService);
-  await prisma.$executeRawUnsafe('TRUNCATE "GenerationLog","Document","Profile","Membership","Job","Subscription","Org","User" RESTART IDENTITY CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE "QuotaPeriod","GenerationLog","Document","Profile","Membership","Job","Subscription","Org","User" RESTART IDENTITY CASCADE');
   const su = await request(app.getHttpServer()).post('/auth/signup').send({ email: 'm@x.com', password: 'pw1234567', name: 'M', agencyName: 'S', profession: 'developer' });
   const token = su.body.accessToken;
   const job = await request(app.getHttpServer()).post('/jobs').set({ Authorization: `Bearer ${token}` }).send({ title: 'J' });

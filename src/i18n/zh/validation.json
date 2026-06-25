@@ -1,0 +1,9 @@
+{
+  "isEmail": "{property} 必须是有效的电子邮件地址。",
+  "isString": "{property} 必须是文本。",
+  "isNotEmpty": "{property} 为必填项。",
+  "minLength": "{property} 至少需要 {0} 个字符。",
+  "maxLength": "{property} 最多 {0} 个字符。",
+  "isEnum": "{property} 必须是有效值。",
+  "isIn": "{property} 必须是允许的值之一。"
+}

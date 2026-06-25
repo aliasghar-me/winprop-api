@@ -1,0 +1,9 @@
+{
+  "isEmail": "{property} ایک درست ای میل پتہ ہونا چاہیے۔",
+  "isString": "{property} متن ہونا چاہیے۔",
+  "isNotEmpty": "{property} درکار ہے۔",
+  "minLength": "{property} کم از کم {0} حروف کا ہونا چاہیے۔",
+  "maxLength": "{property} زیادہ سے زیادہ {0} حروف کا ہونا چاہیے۔",
+  "isEnum": "{property} ایک درست قدر ہونی چاہیے۔",
+  "isIn": "{property} اجازت شدہ اقدار میں سے ایک ہونا چاہیے۔"
+}

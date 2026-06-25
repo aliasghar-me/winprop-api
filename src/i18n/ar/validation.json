@@ -1,0 +1,9 @@
+{
+  "isEmail": "يجب أن يكون {property} عنوان بريد إلكتروني صالحًا.",
+  "isString": "يجب أن يكون {property} نصًا.",
+  "isNotEmpty": "{property} مطلوب.",
+  "minLength": "يجب ألا يقل {property} عن {0} أحرف.",
+  "maxLength": "يجب ألا يزيد {property} عن {0} أحرف.",
+  "isEnum": "يجب أن يكون {property} قيمة صالحة.",
+  "isIn": "يجب أن يكون {property} إحدى القيم المسموح بها."
+}
