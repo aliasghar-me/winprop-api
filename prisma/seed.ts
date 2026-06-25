@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import * as bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -6,7 +7,9 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: proc
 
 async function main() {
   const email = process.env.SUPER_ADMIN_EMAIL || 'root@winprop.ai';
-  await prisma.superAdmin.upsert({ where: { email }, update: {}, create: { email } });
+  const password = process.env.SUPER_ADMIN_PASSWORD || 'change-me-in-prod';
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.superAdmin.upsert({ where: { email }, update: { passwordHash }, create: { email, passwordHash } });
   console.log('seeded super-admin', email);
 }
 

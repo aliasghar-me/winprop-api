@@ -7,7 +7,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -21,11 +28,18 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthDto"
+                }
+              }
+            }
           }
         },
         "tags": [
-          "Health"
+          "health"
         ]
       }
     },
@@ -45,11 +59,18 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenDto"
+                }
+              }
+            }
           }
         },
         "tags": [
-          "Auth"
+          "auth"
         ]
       }
     },
@@ -69,11 +90,18 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenDto"
+                }
+              }
+            }
           }
         },
         "tags": [
-          "Auth"
+          "auth"
         ]
       }
     },
@@ -83,11 +111,18 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenDto"
+                }
+              }
+            }
           }
         },
         "tags": [
-          "Auth"
+          "auth"
         ]
       }
     },
@@ -107,11 +142,23 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Jobs"
+          "jobs"
         ]
       },
       "get": {
@@ -119,11 +166,26 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobDto"
+                  }
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Jobs"
+          "jobs"
         ]
       }
     },
@@ -143,11 +205,23 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Admin"
+          "admin"
         ]
       },
       "get": {
@@ -155,11 +229,23 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LlmStatusDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Admin"
+          "admin"
         ]
       }
     },
@@ -169,11 +255,26 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrgSummaryDto"
+                  }
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Admin"
+          "admin"
         ]
       }
     },
@@ -192,11 +293,23 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Documents"
+          "documents"
         ]
       }
     },
@@ -223,11 +336,23 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Documents"
+          "documents"
         ]
       }
     },
@@ -247,11 +372,23 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Billing"
+          "billing"
         ]
       }
     },
@@ -270,11 +407,18 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookReceivedDto"
+                }
+              }
+            }
           }
         },
         "tags": [
-          "Billing"
+          "billing"
         ]
       }
     },
@@ -294,7 +438,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguageUpdatedDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -326,29 +477,360 @@
       }
     },
     "schemas": {
+      "HealthDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "SignupDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          },
+          "name": {
+            "type": "string"
+          },
+          "agencyName": {
+            "type": "string"
+          },
+          "profession": {
+            "type": "string",
+            "enum": [
+              "developer",
+              "designer",
+              "writer",
+              "sales",
+              "marketer",
+              "consultant",
+              "video"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "name",
+          "agencyName",
+          "profession"
+        ]
+      },
+      "AuthTokenDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
       },
       "LoginDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
       },
       "CreateJobDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "company": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "JobDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orgId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "won"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orgId",
+          "title",
+          "company",
+          "status",
+          "createdAt"
+        ]
       },
       "SetLlmDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "apiKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "apiKey"
+        ]
+      },
+      "OkDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "LlmStatusDto": {
+        "type": "object",
+        "properties": {
+          "isSet": {
+            "type": "boolean"
+          },
+          "provider": {
+            "nullable": true,
+            "enum": [
+              "openai",
+              "anthropic"
+            ],
+            "type": "string"
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "isSet",
+          "provider",
+          "model",
+          "updatedAt"
+        ]
+      },
+      "OrgSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "profession": {
+            "enum": [
+              "developer",
+              "designer",
+              "writer",
+              "sales",
+              "marketer",
+              "consultant",
+              "video"
+            ],
+            "type": "string"
+          },
+          "plan": {
+            "enum": [
+              "free",
+              "solo",
+              "pro",
+              "agency"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "profession",
+          "plan"
+        ]
+      },
+      "DocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "proposal"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentJson": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "version": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "ready"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "jobId",
+          "type",
+          "title",
+          "contentJson",
+          "version",
+          "status",
+          "createdAt"
+        ]
       },
       "CheckoutDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "solo",
+              "pro",
+              "agency"
+            ]
+          }
+        },
+        "required": [
+          "plan"
+        ]
+      },
+      "CheckoutSessionDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "WebhookReceivedDto": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "received"
+        ]
       },
       "UpdateLanguageDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ur",
+              "ar",
+              "fr",
+              "es",
+              "hi",
+              "pt",
+              "bn",
+              "ru",
+              "zh"
+            ]
+          }
+        },
+        "required": [
+          "language"
+        ]
+      },
+      "LanguageUpdatedDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "language"
+        ]
       }
     }
   }

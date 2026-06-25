@@ -1,0 +1,9 @@
+{
+  "isEmail": "{property} एक मान्य ईमेल पता होना चाहिए।",
+  "isString": "{property} टेक्स्ट होना चाहिए।",
+  "isNotEmpty": "{property} आवश्यक है।",
+  "minLength": "{property} कम से कम {0} वर्णों का होना चाहिए।",
+  "maxLength": "{property} अधिकतम {0} वर्णों का होना चाहिए।",
+  "isEnum": "{property} एक मान्य मान होना चाहिए।",
+  "isIn": "{property} अनुमत मानों में से एक होना चाहिए।"
+}

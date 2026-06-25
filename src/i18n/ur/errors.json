@@ -16,6 +16,6 @@
   "profileNotFound": "پروفائل نہیں ملا۔",
   "documentNotFound": "دستاویز نہیں ملی۔",
   "jobNotFound": "کام نہیں ملا۔",
-  "duplicateName": "آپ کے پاس پہلے سے \"{name}\" نام کا کام موجود ہے۔ نام منفرد ہونے چاہیں۔",
+  "duplicateName": "آپ کے پاس پہلے سے \"{name}\" نام کا کام موجود ہے۔ نام منفرد ہونے چاہئیں۔",
   "invalidWebhookSignature": "غلط ویب ہک دستخط۔"
 }

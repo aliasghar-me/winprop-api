@@ -66,34 +66,40 @@ function walkFiles(dir, ext) {
 }
 
 // ─── Check 1: missing Tier-1 keys ───────────────────────────────────────────
+// Every user-facing namespace must have full Tier-1 (ur/ar/fr) coverage:
+//   errors.json     — AppException business errors
+//   validation.json — class-validator messages (H8)
+// English is the source of truth for the key set in each namespace.
 
-const enJson = loadJson(join(I18N_DIR, 'en', 'errors.json'));
-const enKeys = flattenKeys(enJson);
+const NAMESPACES = ['errors', 'validation'];
 
 let keyFailures = 0;
 
-for (const locale of ALL_LOCALES) {
-  const path = join(I18N_DIR, locale, 'errors.json');
-  const localeJson = loadJson(path);
-  const localeKeys = new Set(flattenKeys(localeJson));
+for (const ns of NAMESPACES) {
+  const enKeys = flattenKeys(loadJson(join(I18N_DIR, 'en', `${ns}.json`)));
 
-  const missing = enKeys.filter(k => !localeKeys.has(k));
-  if (missing.length === 0) continue;
+  for (const locale of ALL_LOCALES) {
+    const localeJson = loadJson(join(I18N_DIR, locale, `${ns}.json`));
+    const localeKeys = new Set(flattenKeys(localeJson));
 
-  const isTier1 = TIER1.includes(locale);
-  if (isTier1) {
-    console.error(`\n[FAIL] Missing Tier-1 keys in ${locale}/errors.json (${missing.length} missing):`);
-    for (const k of missing) console.error(`  - ${k}`);
-    keyFailures++;
-  } else {
-    const tier = TIER2.includes(locale) ? 'Tier-2' : 'Tier-3';
-    console.warn(`\n[WARN] Missing ${tier} keys in ${locale}/errors.json (${missing.length} missing):`);
-    for (const k of missing) console.warn(`  - ${k}`);
+    const missing = enKeys.filter(k => !localeKeys.has(k));
+    if (missing.length === 0) continue;
+
+    const isTier1 = TIER1.includes(locale);
+    if (isTier1) {
+      console.error(`\n[FAIL] Missing Tier-1 keys in ${locale}/${ns}.json (${missing.length} missing):`);
+      for (const k of missing) console.error(`  - ${k}`);
+      keyFailures++;
+    } else {
+      const tier = TIER2.includes(locale) ? 'Tier-2' : 'Tier-3';
+      console.warn(`\n[WARN] Missing ${tier} keys in ${locale}/${ns}.json (${missing.length} missing):`);
+      for (const k of missing) console.warn(`  - ${k}`);
+    }
   }
 }
 
 if (keyFailures === 0) {
-  console.log('[OK] Tier-1 locale key coverage: all present.');
+  console.log(`[OK] Tier-1 locale key coverage (${NAMESPACES.join(', ')}): all present.`);
 }
 
 // ─── Check 2: raw-string AppException ───────────────────────────────────────
