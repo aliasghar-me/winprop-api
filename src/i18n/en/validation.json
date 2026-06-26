@@ -5,5 +5,9 @@
   "minLength": "{property} must be at least {0} characters.",
   "maxLength": "{property} must be at most {0} characters.",
   "isEnum": "{property} must be a valid value.",
-  "isIn": "{property} must be one of the allowed values."
+  "isIn": "{property} must be one of the allowed values.",
+  "isInt": "{property} must be a whole number.",
+  "min": "{property} must be at least {0}.",
+  "isArray": "{property} must be a list.",
+  "isHexColor": "{property} must be a valid hex color."
 }

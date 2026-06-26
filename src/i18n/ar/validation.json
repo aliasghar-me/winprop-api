@@ -5,5 +5,9 @@
   "minLength": "يجب ألا يقل {property} عن {0} أحرف.",
   "maxLength": "يجب ألا يزيد {property} عن {0} أحرف.",
   "isEnum": "يجب أن يكون {property} قيمة صالحة.",
-  "isIn": "يجب أن يكون {property} إحدى القيم المسموح بها."
+  "isIn": "يجب أن يكون {property} إحدى القيم المسموح بها.",
+  "isInt": "يجب أن يكون {property} عددًا صحيحًا.",
+  "min": "يجب ألا يقل {property} عن {0}.",
+  "isArray": "يجب أن يكون {property} قائمة.",
+  "isHexColor": "يجب أن يكون {property} لون hex صالحًا."
 }
