@@ -5,6 +5,7 @@ import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './common/throttler/app-throttler.guard.js';
 import { ProfileModule } from './profile/profile.module.js';
+import { PublicModule } from './public/public.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { HealthController } from './health/health.controller.js';
@@ -44,6 +45,7 @@ import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolve
     BillingModule,
     UsersModule,
     ProfileModule,
+    PublicModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, { provide: APP_GUARD, useClass: AppThrottlerGuard }],
