@@ -5,5 +5,9 @@
   "minLength": "{property} 至少需要 {0} 个字符。",
   "maxLength": "{property} 最多 {0} 个字符。",
   "isEnum": "{property} 必须是有效值。",
-  "isIn": "{property} 必须是允许的值之一。"
+  "isIn": "{property} 必须是允许的值之一。",
+  "isInt": "{property} 必须是整数。",
+  "min": "{property} 不能小于 {0}。",
+  "isArray": "{property} 必须是列表。",
+  "isHexColor": "{property} 必须是有效的十六进制颜色。"
 }

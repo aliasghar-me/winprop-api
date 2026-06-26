@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { AdminService } from './admin.service';
 import { SuperAdminService } from './super-admin.service';
@@ -16,7 +17,8 @@ export class AdminController {
   constructor(private admin: AdminService, private superAdmin: SuperAdminService) {}
 
   // Public: exchange super-admin credentials for a short-lived scoped token.
-  @Post('login') @ApiCreatedResponse({ type: SuperAdminTokenDto })
+  // Tight limit — brute-force protection on the privileged surface (H3 follow-up).
+  @Post('login') @Throttle({ default: { limit: 5, ttl: 60_000 } }) @ApiCreatedResponse({ type: SuperAdminTokenDto })
   login(@Body() dto: SuperAdminLoginDto) { return this.superAdmin.login(dto.email, dto.password); }
 
   // Everything below requires the super-admin JWT and is audit-logged.
