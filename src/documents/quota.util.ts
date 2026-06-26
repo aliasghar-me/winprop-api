@@ -2,7 +2,10 @@
 // DocumentsService (to release on failure) so the (orgId, periodStart) key they
 // compute is guaranteed identical.
 
-export const PLAN_LIMITS: Record<string, number> = { free: 3, solo: 15, pro: 60, agency: 1_000_000 };
+// Generations per period. free = trial; enterprise = effectively unlimited (custom).
+export const PLAN_LIMITS: Record<string, number> = {
+  free: 3, starter: 50, professional: 250, agency: 1_000_000, enterprise: 1_000_000,
+};
 
 const PERIOD_MS = 30 * 24 * 3600 * 1000;
 

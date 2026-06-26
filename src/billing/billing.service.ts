@@ -3,9 +3,11 @@ import type Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
 import { STRIPE_CLIENT } from './stripe.token';
 import { AppException } from '../common/errors/app-exception';
+import { PLAN_LIMITS, computePeriodStart } from '../documents/quota.util';
+import type { CheckoutPlan } from './dto/checkout.dto';
 
-const PRICE_ENV: Record<string, string> = {
-  solo: 'STRIPE_PRICE_SOLO', pro: 'STRIPE_PRICE_PRO', agency: 'STRIPE_PRICE_AGENCY',
+const PRICE_ENV: Record<CheckoutPlan, string> = {
+  starter: 'STRIPE_PRICE_STARTER', professional: 'STRIPE_PRICE_PROFESSIONAL', agency: 'STRIPE_PRICE_AGENCY',
 };
 
 const MAX_ATTEMPTS = 5;
@@ -20,26 +22,60 @@ export class BillingService {
 
   constructor(@Inject(STRIPE_CLIENT) private stripe: Stripe.Stripe, private prisma: PrismaService) {}
 
-  async createCheckout(orgId: string, plan: 'solo' | 'pro' | 'agency') {
+  private async ensureCustomer(orgId: string) {
     let org = await this.prisma.org.findUnique({ where: { id: orgId } });
-    if (!org!.stripeCustomerId) {
+    if (!org) throw new AppException(404, 'NOT_FOUND', 'errors.orgNotFound');
+    if (!org.stripeCustomerId) {
       const customer = await this.stripe.customers.create({ metadata: { orgId } });
       org = await this.prisma.org.update({ where: { id: orgId }, data: { stripeCustomerId: customer.id } });
     }
+    return org;
+  }
+
+  async createCheckout(orgId: string, plan: CheckoutPlan) {
+    const org = await this.ensureCustomer(orgId);
+    const webOrigin = process.env.WEB_ORIGIN?.split(',')[0] ?? '';
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
-      customer: org!.stripeCustomerId!,
+      customer: org.stripeCustomerId!,
       line_items: [{ price: process.env[PRICE_ENV[plan]]!, quantity: 1 }],
-      success_url: `${process.env.WEB_ORIGIN}/jobs?billing=success`,
-      cancel_url: `${process.env.WEB_ORIGIN}/jobs?billing=cancel`,
+      success_url: `${webOrigin}/billing?status=success`,
+      cancel_url: `${webOrigin}/billing?status=cancel`,
       metadata: { orgId },
     });
     return { url: session.url };
   }
 
-  private priceToPlan(priceId: string): 'solo' | 'pro' | 'agency' | 'free' {
-    if (priceId === process.env.STRIPE_PRICE_SOLO || priceId === 'price_solo') return 'solo';
-    if (priceId === process.env.STRIPE_PRICE_PRO || priceId === 'price_pro') return 'pro';
+  // Stripe-hosted customer portal (manage/cancel/update payment).
+  async createPortal(orgId: string) {
+    const org = await this.prisma.org.findUnique({ where: { id: orgId } });
+    if (!org?.stripeCustomerId) throw new AppException(400, 'VALIDATION', 'errors.noBillingAccount');
+    const webOrigin = process.env.WEB_ORIGIN?.split(',')[0] ?? '';
+    const session = await this.stripe.billingPortal.sessions.create({
+      customer: org.stripeCustomerId,
+      return_url: `${webOrigin}/billing`,
+    });
+    return { url: session.url };
+  }
+
+  // Current plan + usage for the billing page.
+  async getStatus(orgId: string) {
+    const org = await this.prisma.org.findUnique({ where: { id: orgId }, include: { subscription: true } });
+    if (!org) throw new AppException(404, 'NOT_FOUND', 'errors.orgNotFound');
+    const periodStart = computePeriodStart({ orgCreatedAt: org.createdAt, subscriptionPeriodEnd: org.subscription?.currentPeriodEnd });
+    const used = await this.prisma.generationLog.count({ where: { orgId, createdAt: { gte: periodStart } } });
+    return {
+      plan: org.plan,
+      subStatus: org.subStatus ?? null,
+      used,
+      limit: PLAN_LIMITS[org.plan] ?? 0,
+      periodEnd: org.subscription?.currentPeriodEnd ?? null,
+    };
+  }
+
+  private priceToPlan(priceId: string): CheckoutPlan | 'free' {
+    if (priceId === process.env.STRIPE_PRICE_STARTER || priceId === 'price_starter') return 'starter';
+    if (priceId === process.env.STRIPE_PRICE_PROFESSIONAL || priceId === 'price_professional') return 'professional';
     if (priceId === process.env.STRIPE_PRICE_AGENCY || priceId === 'price_agency') return 'agency';
     return 'free';
   }
