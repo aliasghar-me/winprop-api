@@ -9,5 +9,6 @@
   "isInt": "{property} একটি পূর্ণ সংখ্যা হতে হবে।",
   "min": "{property} অন্তত {0} হতে হবে।",
   "isArray": "{property} একটি তালিকা হতে হবে।",
-  "isHexColor": "{property} একটি বৈধ হেক্স রঙ হতে হবে।"
+  "isHexColor": "{property} একটি বৈধ হেক্স রঙ হতে হবে।",
+  "isObject": "{property} একটি অবজেক্ট হতে হবে।"
 }

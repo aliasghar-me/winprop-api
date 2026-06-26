@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,6 +9,8 @@ import type { JwtUser } from '../auth/jwt.strategy';
 import { QuotaGuard } from './quota.guard';
 import { DocumentsService } from './documents.service';
 import { DocumentDto } from './dto/document.dto';
+import { UpdateDocumentDto } from './dto/update-document.dto';
+import { RegenerateSectionDto } from './dto/regenerate-section.dto';
 
 @ApiTags('documents')
 @ApiBearerAuth()
@@ -27,5 +29,30 @@ export class DocumentsController {
   @ApiOkResponse({ type: DocumentDto })
   getOne(@CurrentUser() u: JwtUser, @Param('jobId') jobId: string, @Param('docId') docId: string) {
     return this.docs.getOne(u.orgId, jobId, docId);
+  }
+
+  // Editor save (autosave). Content edits snapshot the prior version.
+  @Patch(':docId') @Roles('owner', 'admin', 'member')
+  @ApiOkResponse({ type: DocumentDto })
+  update(@CurrentUser() u: JwtUser, @Param('jobId') jobId: string, @Param('docId') docId: string, @Body() dto: UpdateDocumentDto) {
+    return this.docs.update(u.orgId, jobId, docId, dto);
+  }
+
+  @Get(':docId/versions')
+  @ApiOkResponse({ type: [DocumentDto] })
+  versions(@CurrentUser() u: JwtUser, @Param('jobId') jobId: string, @Param('docId') docId: string) {
+    return this.docs.listVersions(u.orgId, jobId, docId);
+  }
+
+  // Per-section AI regenerate — quota-gated (each AI call consumes one slot).
+  @Post(':docId/regenerate-section') @Roles('owner', 'admin', 'member') @UseGuards(QuotaGuard)
+  regenerateSection(
+    @CurrentUser() u: JwtUser,
+    @Param('jobId') jobId: string,
+    @Param('docId') docId: string,
+    @Body() dto: RegenerateSectionDto,
+    @Req() req: Request,
+  ) {
+    return this.docs.regenerateSection(u.orgId, jobId, docId, dto.section, (req as any).quotaReservation);
   }
 }

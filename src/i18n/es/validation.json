@@ -9,5 +9,6 @@
   "isInt": "{property} debe ser un número entero.",
   "min": "{property} debe ser al menos {0}.",
   "isArray": "{property} debe ser una lista.",
-  "isHexColor": "{property} debe ser un color hexadecimal válido."
+  "isHexColor": "{property} debe ser un color hexadecimal válido.",
+  "isObject": "{property} debe ser un objeto."
 }
