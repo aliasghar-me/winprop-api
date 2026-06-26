@@ -1,5 +1,6 @@
 import { Body, Controller, Post, Req, Res } from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
@@ -16,6 +17,7 @@ export class AuthController {
   }
 
   @Post('signup')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @ApiCreatedResponse({ type: AuthTokenDto })
   async signup(@Body() dto: SignupDto, @Res({ passthrough: true }) res: Response) {
     const t = await this.auth.signup(dto); this.setRefresh(res, t.refreshToken);
@@ -23,6 +25,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiCreatedResponse({ type: AuthTokenDto })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const t = await this.auth.login(dto.email, dto.password); this.setRefresh(res, t.refreshToken);
