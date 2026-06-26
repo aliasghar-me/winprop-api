@@ -695,6 +695,58 @@
         ]
       }
     },
+    "/billing/portal": {
+      "post": {
+        "operationId": "BillingController_portal",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/billing/status": {
+      "get": {
+        "operationId": "BillingController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/billing/webhook": {
       "post": {
         "operationId": "BillingController_webhook",
@@ -1216,9 +1268,10 @@
           "plan": {
             "enum": [
               "free",
-              "solo",
-              "pro",
-              "agency"
+              "starter",
+              "professional",
+              "agency",
+              "enterprise"
             ],
             "type": "string"
           }
@@ -1321,8 +1374,8 @@
           "plan": {
             "type": "string",
             "enum": [
-              "solo",
-              "pro",
+              "starter",
+              "professional",
               "agency"
             ]
           }
@@ -1341,6 +1394,41 @@
         },
         "required": [
           "url"
+        ]
+      },
+      "BillingStatusDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "enum": [
+              "free",
+              "starter",
+              "professional",
+              "agency",
+              "enterprise"
+            ],
+            "type": "string"
+          },
+          "subStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "used": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "periodEnd": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "plan",
+          "used",
+          "limit"
         ]
       },
       "WebhookReceivedDto": {

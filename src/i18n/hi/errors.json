@@ -17,5 +17,6 @@
   "documentNotFound": "दस्तावेज़ नहीं मिला।",
   "jobNotFound": "नौकरी नहीं मिली।",
   "duplicateName": "आपके पास पहलेसे \"{name}\" नाम की नौकरी है। नाम अद्वितीय होने चाहिए।",
-  "invalidWebhookSignature": "अमान्य वेबहुक हस्ताक्षर।"
+  "invalidWebhookSignature": "अमान्य वेबहुक हस्ताक्षर।",
+  "noBillingAccount": "अभी कोई बिलिंग खाता नहीं है। पहले कोई प्लान चुनें।"
 }

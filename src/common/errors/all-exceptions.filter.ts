@@ -25,6 +25,7 @@ const EN_FALLBACK: Record<string, string> = {
   'errors.jobNotFound': 'Job not found.',
   'errors.duplicateName': 'You already have a job named "{name}". Names must be unique.',
   'errors.invalidWebhookSignature': 'Invalid webhook signature.',
+  'errors.noBillingAccount': 'No billing account yet. Subscribe to a plan first.',
 };
 
 function interpolate(template: string, args?: Record<string, any>): string {

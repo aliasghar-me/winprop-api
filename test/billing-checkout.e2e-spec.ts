@@ -25,7 +25,7 @@ describe('Billing checkout', () => {
   afterAll(async () => { await app.close(); });
 
   it('creates a checkout session and a stripe customer', async () => {
-    const res = await request(app.getHttpServer()).post('/billing/checkout').set({ Authorization: `Bearer ${token}` }).send({ plan: 'pro' });
+    const res = await request(app.getHttpServer()).post('/billing/checkout').set({ Authorization: `Bearer ${token}` }).send({ plan: 'professional' });
     expect(res.status).toBe(201);
     expect(res.body.url).toContain('checkout.stripe');
     expect(stripeMock.customers.create).toHaveBeenCalled();

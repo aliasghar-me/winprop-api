@@ -11,7 +11,7 @@ function makeEvent(orgId: string) {
     id: 'evt_1', type: 'customer.subscription.updated',
     data: { object: {
       id: 'sub_1', status: 'active', customer: 'cus_1',
-      items: { data: [{ price: { id: 'price_pro' } }] },
+      items: { data: [{ price: { id: 'price_professional' } }] },
       current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 3600, metadata: { orgId },
     } },
   };
@@ -69,7 +69,7 @@ describe('Billing webhook (durable inbox, async processing)', () => {
     const sub = await prisma.subscription.findFirst();
     expect(sub?.status).toBe('active');
     const org = await prisma.org.findUnique({ where: { id: orgId } });
-    expect(org?.plan).toBe('pro');                 // mapped from price_pro
+    expect(org?.plan).toBe('professional');                 // mapped from price_professional
     expect(org?.subStatus).toBe('active');
     expect(await prisma.processedEvent.count()).toBe(1);
 

@@ -25,9 +25,10 @@ enum Role {
 
 enum Plan {
   free
-  solo
-  pro
+  starter
+  professional
   agency
+  enterprise
 }
 
 enum JobStatus {

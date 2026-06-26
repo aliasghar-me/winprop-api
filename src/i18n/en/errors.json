@@ -17,5 +17,6 @@
   "documentNotFound": "Document not found.",
   "jobNotFound": "Job not found.",
   "duplicateName": "You already have a job named \"{name}\". Names must be unique.",
-  "invalidWebhookSignature": "Invalid webhook signature."
+  "invalidWebhookSignature": "Invalid webhook signature.",
+  "noBillingAccount": "No billing account yet. Subscribe to a plan first."
 }
