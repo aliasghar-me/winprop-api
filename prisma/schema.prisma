@@ -149,15 +149,30 @@ model Job {
 }
 
 model Document {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   jobId       String
-  job         Job       @relation(fields: [jobId], references: [id])
-  type        DocType   @default(proposal)
+  job         Job               @relation(fields: [jobId], references: [id])
+  type        DocType           @default(proposal)
   title       String
   contentJson Json
-  version     Int       @default(1)
-  status      DocStatus @default(draft)
-  createdAt   DateTime  @default(now())
+  version     Int               @default(1)
+  status      DocStatus         @default(draft)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+  versions    DocumentVersion[]
+}
+
+// Snapshot of a document's content before an edit overwrote it (editor history, V1).
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version     Int
+  title       String
+  contentJson Json
+  createdAt   DateTime @default(now())
+
+  @@index([documentId])
 }
 
 model Subscription {

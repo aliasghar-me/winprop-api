@@ -9,5 +9,6 @@
   "isInt": "{property} 必须是整数。",
   "min": "{property} 不能小于 {0}。",
   "isArray": "{property} 必须是列表。",
-  "isHexColor": "{property} 必须是有效的十六进制颜色。"
+  "isHexColor": "{property} 必须是有效的十六进制颜色。",
+  "isObject": "{property} 必须是对象。"
 }

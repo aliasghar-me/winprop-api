@@ -9,5 +9,6 @@
   "isInt": "{property} ایک مکمل عدد ہونا چاہیے۔",
   "min": "{property} کم از کم {0} ہونا چاہیے۔",
   "isArray": "{property} ایک فہرست ہونی چاہیے۔",
-  "isHexColor": "{property} ایک درست ہیکس رنگ ہونا چاہیے۔"
+  "isHexColor": "{property} ایک درست ہیکس رنگ ہونا چاہیے۔",
+  "isObject": "{property} ایک آبجیکٹ ہونا چاہیے۔"
 }

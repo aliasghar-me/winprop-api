@@ -9,5 +9,6 @@
   "isInt": "يجب أن يكون {property} عددًا صحيحًا.",
   "min": "يجب ألا يقل {property} عن {0}.",
   "isArray": "يجب أن يكون {property} قائمة.",
-  "isHexColor": "يجب أن يكون {property} لون hex صالحًا."
+  "isHexColor": "يجب أن يكون {property} لون hex صالحًا.",
+  "isObject": "يجب أن يكون {property} كائنًا."
 }
