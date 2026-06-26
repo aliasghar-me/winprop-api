@@ -17,5 +17,6 @@
   "documentNotFound": "Documento no encontrado.",
   "jobNotFound": "Empleo no encontrado.",
   "duplicateName": "Ya tiene un empleo llamado \"{name}\". Los nombres deben ser únicos.",
-  "invalidWebhookSignature": "Firma de webhook inválida."
+  "invalidWebhookSignature": "Firma de webhook inválida.",
+  "noBillingAccount": "Aún no hay cuenta de facturación. Suscríbete a un plan primero."
 }

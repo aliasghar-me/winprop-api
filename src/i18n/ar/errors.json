@@ -17,5 +17,6 @@
   "documentNotFound": "المستند غير موجود.",
   "jobNotFound": "الوظيفة غير موجودة.",
   "duplicateName": "لديك بالفعل وظيفة باسم \"{name}\". يجب أن تكون الأسماء فريدة.",
-  "invalidWebhookSignature": "توقيع webhook غير صالح."
+  "invalidWebhookSignature": "توقيع webhook غير صالح.",
+  "noBillingAccount": "لا يوجد حساب فوترة بعد. اشترك في خطة أولاً."
 }

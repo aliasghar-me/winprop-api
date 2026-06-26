@@ -17,5 +17,6 @@
   "documentNotFound": "Documento não encontrado.",
   "jobNotFound": "Vaga não encontrada.",
   "duplicateName": "Você já tem uma vaga chamada \"{name}\". Os nomes devem ser únicos.",
-  "invalidWebhookSignature": "Assinatura de webhook inválida."
+  "invalidWebhookSignature": "Assinatura de webhook inválida.",
+  "noBillingAccount": "Ainda não há conta de cobrança. Assine um plano primeiro."
 }

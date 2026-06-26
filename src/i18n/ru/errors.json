@@ -17,5 +17,6 @@
   "documentNotFound": "Документ не найден.",
   "jobNotFound": "Вакансия не найдена.",
   "duplicateName": "У вас уже есть вакансия с именем \"{name}\". Имена должны быть уникальными.",
-  "invalidWebhookSignature": "Недействительная подпись webhook."
+  "invalidWebhookSignature": "Недействительная подпись webhook.",
+  "noBillingAccount": "Платёжный аккаунт ещё не создан. Сначала подпишитесь на план."
 }
