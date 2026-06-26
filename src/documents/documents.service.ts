@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LlmService } from '../llm/llm.service';
 import { JobsService } from '../jobs/jobs.service';
 import { AppException } from '../common/errors/app-exception';
+
+const shareBaseUrl = () =>
+  process.env.PROPOSAL_SHARE_BASE_URL || `${process.env.WEB_ORIGIN?.split(',')[0] ?? 'https://proposal.winprop.ai'}/p`;
 
 @Injectable()
 export class DocumentsService {
@@ -107,6 +111,24 @@ export class DocumentsService {
   async listVersions(orgId: string, jobId: string, docId: string) {
     await this.getOne(orgId, jobId, docId); // tenant scope + existence
     return this.prisma.documentVersion.findMany({ where: { documentId: docId }, orderBy: { version: 'desc' } });
+  }
+
+  // Create (or return existing) public share link for a document.
+  async share(orgId: string, jobId: string, docId: string) {
+    const doc = await this.getOne(orgId, jobId, docId);
+    let token = doc.shareToken;
+    if (!token) {
+      token = randomBytes(9).toString('base64url'); // 12-char url-safe token
+      await this.prisma.document.update({ where: { id: doc.id }, data: { shareToken: token } });
+    }
+    return { token, url: `${shareBaseUrl()}/${token}` };
+  }
+
+  // Revoke the public link.
+  async unshare(orgId: string, jobId: string, docId: string) {
+    const doc = await this.getOne(orgId, jobId, docId);
+    if (doc.shareToken) await this.prisma.document.update({ where: { id: doc.id }, data: { shareToken: null } });
+    return { ok: true };
   }
 
   // Per-section AI regenerate. Returns the suggested value (client merges + saves via
