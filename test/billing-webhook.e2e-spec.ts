@@ -32,7 +32,11 @@ describe('Billing webhook (durable inbox, async processing)', () => {
     await prisma.org.update({ where: { id: orgId }, data: { stripeCustomerId: 'cus_1' } });
     event = makeEvent(orgId);
   });
-  afterAll(async () => { await app.close(); });
+  afterAll(async () => {
+    // Purge queued rows so a later test app's drain doesn't reclaim them (FK noise).
+    await prisma.$executeRawUnsafe('TRUNCATE "WebhookEvent","ProcessedEvent" RESTART IDENTITY CASCADE');
+    await app.close();
+  });
 
   // Processing is async (the in-request setImmediate drain may already own the row).
   // Poll — nudging a drain each round — until the event reaches a terminal state.

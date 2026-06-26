@@ -9,6 +9,6 @@
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1"
   },
-  "setupFiles": ["dotenv/config"],
+  "setupFiles": ["dotenv/config", "<rootDir>/setup-throttle.ts"],
   "maxWorkers": 1
 }

@@ -31,8 +31,13 @@ enum Plan {
 }
 
 enum JobStatus {
-  active
+  draft
+  proposal_generated
+  sent
+  viewed
+  negotiation
   won
+  lost
 }
 
 enum DocType {
@@ -104,28 +109,43 @@ model Membership {
 }
 
 model Profile {
-  id         String   @id @default(cuid())
-  orgId      String   @unique
-  org        Org      @relation(fields: [orgId], references: [id])
-  services   String[]
-  skills     String[]
-  priceMin   Int      @default(5000)
-  priceMax   Int      @default(40000)
-  tone       String   @default("premium")
-  brandColor String   @default("#6366F1")
-  brandShort String   @default("WP")
-  agencyName String
+  id            String   @id @default(cuid())
+  orgId         String   @unique
+  org           Org      @relation(fields: [orgId], references: [id])
+  services      String[]
+  skills        String[]
+  priceMin      Int      @default(5000)
+  priceMax      Int      @default(40000)
+  tone          String   @default("premium")
+  brandColor    String   @default("#6366F1")
+  brandShort    String   @default("WP")
+  agencyName    String
+  // Rich brand + credibility data (V1) — biggest lever on proposal quality.
+  logoUrl       String?
+  website       String?
+  contactInfo   String?
+  portfolioLinks String[] @default([])
+  caseStudies   Json? // [{ title, summary, url? }]
+  testimonials  Json? // [{ author, quote, company? }]
 }
 
 model Job {
-  id        String     @id @default(cuid())
-  orgId     String
-  org       Org        @relation(fields: [orgId], references: [id])
-  title     String
-  company   String     @default("—")
-  status    JobStatus  @default(active)
-  createdAt DateTime   @default(now())
-  documents Document[]
+  id                 String     @id @default(cuid())
+  orgId              String
+  org                Org        @relation(fields: [orgId], references: [id])
+  title              String
+  company            String     @default("—")
+  // Rich client + opportunity data (V1) — feeds proposal-generation quality.
+  clientName         String?
+  clientEmail        String?
+  clientWebsite      String?
+  projectDescription String?
+  requirements       String?
+  budget             Int? // whole currency units, nullable
+  timeline           String? // free text, e.g. "6 weeks"
+  status             JobStatus  @default(draft)
+  createdAt          DateTime   @default(now())
+  documents          Document[]
 }
 
 model Document {

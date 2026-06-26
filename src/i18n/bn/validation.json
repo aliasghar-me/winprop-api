@@ -5,5 +5,9 @@
   "minLength": "{property} অন্তত {0} অক্ষরের হতে হবে।",
   "maxLength": "{property} সর্বোচ্চ {0} অক্ষরের হতে হবে।",
   "isEnum": "{property} একটি বৈধ মান হতে হবে।",
-  "isIn": "{property} অনুমোদিত মানগুলির একটি হতে হবে।"
+  "isIn": "{property} অনুমোদিত মানগুলির একটি হতে হবে।",
+  "isInt": "{property} একটি পূর্ণ সংখ্যা হতে হবে।",
+  "min": "{property} অন্তত {0} হতে হবে।",
+  "isArray": "{property} একটি তালিকা হতে হবে।",
+  "isHexColor": "{property} একটি বৈধ হেক্স রঙ হতে হবে।"
 }
