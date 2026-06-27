@@ -140,6 +140,25 @@
         ]
       }
     },
+    "/auth/logout-all": {
+      "post": {
+        "operationId": "AuthController_logoutAll",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/jobs": {
       "post": {
         "operationId": "JobsController_create",
@@ -204,6 +223,39 @@
       }
     },
     "/jobs/{id}": {
+      "get": {
+        "operationId": "JobsController_getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "jobs"
+        ]
+      },
       "patch": {
         "operationId": "JobsController_update",
         "parameters": [
@@ -1003,33 +1055,43 @@
         "properties": {
           "title": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 200
           },
           "company": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "clientName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "clientEmail": {
             "type": "string",
+            "maxLength": 320,
             "format": "email"
           },
           "clientWebsite": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
           },
           "projectDescription": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           },
           "requirements": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           },
           "budget": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 1000000000
           },
           "timeline": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           }
         },
         "required": [
@@ -1110,33 +1172,43 @@
         "properties": {
           "title": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 200
           },
           "company": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "clientName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "clientEmail": {
             "type": "string",
+            "maxLength": 320,
             "format": "email"
           },
           "clientWebsite": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
           },
           "projectDescription": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           },
           "requirements": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           },
           "budget": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 1000000000
           },
           "timeline": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "status": {
             "type": "string",
@@ -1564,60 +1636,79 @@
         "type": "object",
         "properties": {
           "agencyName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "services": {
+            "maxItems": 50,
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 120
             }
           },
           "skills": {
+            "maxItems": 50,
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 120
             }
           },
           "priceMin": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 100000000
           },
           "priceMax": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 100000000
           },
           "tone": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 40
           },
           "brandColor": {
             "type": "string",
             "pattern": "^#?([0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|[0-9A-F]{8})$"
           },
           "brandShort": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 8
           },
           "logoUrl": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
           },
           "website": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
           },
           "contactInfo": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "portfolioLinks": {
+            "maxItems": 50,
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2048
             }
           },
           "caseStudies": {
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "object"
             }
           },
           "testimonials": {
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "object"

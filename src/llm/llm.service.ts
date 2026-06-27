@@ -27,11 +27,22 @@ export class LlmService {
     if (Number(agg._sum.costUsd ?? 0) >= cap) throw new AppException(429, 'QUOTA_EXCEEDED', 'errors.platformBusy');
   }
 
+  // Resolve the provider for a stored config. When LLM_MOCK=true the mock
+  // provider (dev/demo only) takes over so the full pipeline can run without a
+  // funded upstream key; otherwise the configured vendor is used.
+  private resolveProvider(vendor: string): LlmProvider | undefined {
+    if (process.env.LLM_MOCK === 'true') {
+      const mock = this.providers.find((p) => p.vendor === 'mock');
+      if (mock) return mock;
+    }
+    return this.providers.find((p) => p.vendor === vendor);
+  }
+
   async generateProposal(profile: Profile & { profession?: string }, job: Job) {
     await this.assertPlatformBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
-    const provider = this.providers.find((p) => p.vendor === cfg.provider);
+    const provider = this.resolveProvider(cfg.provider);
     if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
     const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
     const messages = buildProposalPrompt(profile, job);
@@ -65,7 +76,7 @@ export class LlmService {
     await this.assertPlatformBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
-    const provider = this.providers.find((p) => p.vendor === cfg.provider);
+    const provider = this.resolveProvider(cfg.provider);
     if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
     const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
     const messages = buildSectionPrompt(profile, job, section, current);
