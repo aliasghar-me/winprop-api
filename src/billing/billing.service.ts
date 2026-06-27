@@ -87,7 +87,7 @@ export class BillingService {
   async ingestEvent(rawBody: Buffer | string, signature: string) {
     let event: any;
     try {
-      event = this.stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy');
+      event = this.stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!);
     } catch {
       throw new AppException(400, 'VALIDATION', 'errors.invalidWebhookSignature');
     }
@@ -177,8 +177,16 @@ export class BillingService {
   private async processEvent(event: any) {
     if (['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) {
       const sub: any = event.data.object;
-      const orgId = sub.metadata?.orgId
-        ?? (await this.prisma.org.findFirst({ where: { stripeCustomerId: sub.customer } }))?.id;
+      // Bind to the org by the Stripe CUSTOMER (which we set on our own Org row),
+      // NOT by attacker-controllable event metadata. Metadata is only a fallback for
+      // the very first event before stripeCustomerId is linked, and only when it
+      // resolves to an org with no customer yet — never to override an existing mapping.
+      const byCustomer = await this.prisma.org.findFirst({ where: { stripeCustomerId: sub.customer } });
+      let orgId = byCustomer?.id;
+      if (!orgId && sub.metadata?.orgId) {
+        const claimed = await this.prisma.org.findFirst({ where: { id: sub.metadata.orgId, stripeCustomerId: null } });
+        orgId = claimed?.id;
+      }
       if (orgId) {
         const priceId = sub.items?.data?.[0]?.price?.id ?? '';
         const plan = event.type === 'customer.subscription.deleted' ? 'free' : this.priceToPlan(priceId);
