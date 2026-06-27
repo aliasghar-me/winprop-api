@@ -8,7 +8,7 @@ import { JwtStrategy } from './jwt.strategy';
 @Module({
   imports: [
     PassportModule,
-    JwtModule.registerAsync({ useFactory: () => ({ secret: process.env.JWT_SECRET || 'dev-secret' }) }),
+    JwtModule.registerAsync({ useFactory: () => ({ secret: process.env.JWT_SECRET, signOptions: { algorithm: 'HS256' } }) }),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
