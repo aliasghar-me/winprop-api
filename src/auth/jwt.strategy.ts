@@ -14,7 +14,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: process.env.JWT_SECRET || 'dev-secret',
+      secretOrKey: process.env.JWT_SECRET as string,
+      algorithms: ['HS256'], // pin algorithm — reject anything else (audit #11)
     });
   }
   async validate(payload: any): Promise<JwtUser> {
