@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Profile, Job } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/crypto/crypto.service';
@@ -11,13 +11,24 @@ export const LLM_PROVIDERS = 'LLM_PROVIDERS';
 
 @Injectable()
 export class LlmService {
+  private readonly logger = new Logger(LlmService.name);
   constructor(
     private prisma: PrismaService,
     private crypto: CryptoService,
     @Inject(LLM_PROVIDERS) private providers: LlmProvider[],
   ) {}
 
+  // Platform-funded spend circuit-breaker (security #1): cap total LLM cost per UTC
+  // day so mass free signups can't run up an unbounded bill.
+  private async assertPlatformBudget() {
+    const cap = Number(process.env.LLM_DAILY_USD_CAP ?? 100);
+    const start = new Date(); start.setUTCHours(0, 0, 0, 0);
+    const agg = await this.prisma.generationLog.aggregate({ _sum: { costUsd: true }, where: { createdAt: { gte: start } } });
+    if (Number(agg._sum.costUsd ?? 0) >= cap) throw new AppException(429, 'QUOTA_EXCEEDED', 'errors.platformBusy');
+  }
+
   async generateProposal(profile: Profile & { profession?: string }, job: Job) {
+    await this.assertPlatformBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.providers.find((p) => p.vendor === cfg.provider);
@@ -28,7 +39,9 @@ export class LlmService {
     try {
       result = await provider.generate(cfg.model, apiKey, messages);
     } catch (e: any) {
-      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed', { message: e.message });
+      // Log the upstream detail server-side; return a generic message (no provider/status leak, #15).
+      this.logger.error(`LLM generate failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
     }
     return {
       text: result.text,
@@ -49,6 +62,7 @@ export class LlmService {
     section: ProposalSection,
     current: Record<string, unknown>,
   ) {
+    await this.assertPlatformBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.providers.find((p) => p.vendor === cfg.provider);
@@ -59,7 +73,8 @@ export class LlmService {
     try {
       result = await provider.generate(cfg.model, apiKey, messages);
     } catch (e: any) {
-      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed', { message: e.message });
+      this.logger.error(`LLM regenerate failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
     }
     let value: unknown;
     try {

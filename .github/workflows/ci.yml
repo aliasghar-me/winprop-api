@@ -32,8 +32,8 @@ jobs:
       ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
       STRIPE_SECRET_KEY: sk_test_dummy_ci
       STRIPE_WEBHOOK_SECRET: whsec_dummy_ci
-      STRIPE_PRICE_SOLO: price_dummy_solo
-      STRIPE_PRICE_PRO: price_dummy_pro
+      STRIPE_PRICE_STARTER: price_dummy_starter
+      STRIPE_PRICE_PROFESSIONAL: price_dummy_professional
       STRIPE_PRICE_AGENCY: price_dummy_agency
       PORT: "3001"
       WEB_ORIGIN: "http://localhost:3000"
@@ -53,6 +53,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Dependency audit (fail on high+)
+        run: pnpm audit --audit-level=high
 
       - name: Prisma migrate deploy
         run: pnpm prisma migrate deploy

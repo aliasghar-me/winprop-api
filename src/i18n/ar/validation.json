@@ -10,5 +10,7 @@
   "min": "يجب ألا يقل {property} عن {0}.",
   "isArray": "يجب أن يكون {property} قائمة.",
   "isHexColor": "يجب أن يكون {property} لون hex صالحًا.",
-  "isObject": "يجب أن يكون {property} كائنًا."
+  "isObject": "يجب أن يكون {property} كائنًا.",
+  "isUrl": "يجب أن يكون {property} رابطًا صالحًا.",
+  "arrayMaxSize": "يجب ألا يحتوي {property} على أكثر من {0} عنصرًا."
 }

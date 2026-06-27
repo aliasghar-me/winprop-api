@@ -1,7 +1,7 @@
 {
   "llmNotConfigured": "Aucun fournisseur LLM n'est configuré. Contactez l'administrateur.",
   "llmProviderUnavailable": "Le fournisseur {provider} n'est pas disponible.",
-  "llmGenerationFailed": "Échec de la génération : {message}",
+  "llmGenerationFailed": "Échec de la génération. Veuillez réessayer.",
   "llmUnreadable": "L'IA a renvoyé une réponse illisible. Veuillez réessayer.",
   "llmIncomplete": "L'IA a renvoyé une réponse incomplète. Veuillez réessayer.",
   "emailInUse": "L'adresse e-mail est déjà utilisée.",
@@ -18,5 +18,7 @@
   "jobNotFound": "Mission introuvable.",
   "duplicateName": "Vous avez déjà une mission nommée \"{name}\". Les noms doivent être uniques.",
   "invalidWebhookSignature": "Signature webhook invalide.",
-  "noBillingAccount": "Aucun compte de facturation pour l'instant. Abonnez-vous d'abord à un forfait."
+  "noBillingAccount": "Aucun compte de facturation pour l'instant. Abonnez-vous d'abord à un forfait.",
+  "platformBusy": "Le service est momentanément occupé. Réessayez bientôt.",
+  "invalidOrigin": "Origine de la requête non autorisée."
 }
