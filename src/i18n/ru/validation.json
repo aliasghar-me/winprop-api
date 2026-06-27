@@ -10,5 +10,7 @@
   "min": "{property} должно быть не менее {0}.",
   "isArray": "{property} должно быть списком.",
   "isHexColor": "{property} должно быть допустимым шестнадцатеричным цветом.",
-  "isObject": "{property} должно быть объектом."
+  "isObject": "{property} должно быть объектом.",
+  "isUrl": "{property} должно быть корректным URL.",
+  "arrayMaxSize": "{property} должно содержать не более {0} элементов."
 }

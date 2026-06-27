@@ -16,7 +16,7 @@ async function bootstrap() {
   app.use(helmet()); // security headers (CSP/HSTS/XFO/no-sniff/referrer-policy)
   // Raw body ONLY for the Stripe webhook (added in a later task); JSON everywhere else.
   app.use('/billing/webhook', json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
-  app.use(json());
+  app.use(json({ limit: '512kb' })); // cap payload size (security #3)
   app.use(cookieParser());
   // Strict allow-list (validateEnv guarantees WEB_ORIGIN is set) — never reflect arbitrary origins.
   app.enableCors({ origin: process.env.WEB_ORIGIN!.split(','), credentials: true });
@@ -25,8 +25,11 @@ async function bootstrap() {
   // unwraps the resulting I18nValidationException into our standard error envelope.
   app.useGlobalPipes(new I18nValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
-  const doc = SwaggerModule.createDocument(app, new DocumentBuilder().setTitle('WinProp API').setVersion('1').addBearerAuth().build());
-  SwaggerModule.setup('docs', app, doc);
+  // Don't expose the API surface (routes/DTOs) publicly in production (security #6).
+  if (process.env.NODE_ENV !== 'production') {
+    const doc = SwaggerModule.createDocument(app, new DocumentBuilder().setTitle('WinProp API').setVersion('1').addBearerAuth().build());
+    SwaggerModule.setup('docs', app, doc);
+  }
   await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();

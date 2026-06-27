@@ -10,5 +10,7 @@
   "min": "{property} 不能小于 {0}。",
   "isArray": "{property} 必须是列表。",
   "isHexColor": "{property} 必须是有效的十六进制颜色。",
-  "isObject": "{property} 必须是对象。"
+  "isObject": "{property} 必须是对象。",
+  "isUrl": "{property} 必须是有效的网址。",
+  "arrayMaxSize": "{property} 最多包含 {0} 项。"
 }

@@ -10,5 +10,7 @@
   "min": "{property} doit être au moins {0}.",
   "isArray": "{property} doit être une liste.",
   "isHexColor": "{property} doit être une couleur hexadécimale valide.",
-  "isObject": "{property} doit être un objet."
+  "isObject": "{property} doit être un objet.",
+  "isUrl": "{property} doit être une URL valide.",
+  "arrayMaxSize": "{property} ne doit pas contenir plus de {0} éléments."
 }

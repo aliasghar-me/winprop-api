@@ -1,7 +1,7 @@
 {
   "llmNotConfigured": "未配置 LLM 提供商。请联系平台管理员。",
   "llmProviderUnavailable": "提供商 {provider} 不可用。",
-  "llmGenerationFailed": "生成失败：{message}",
+  "llmGenerationFailed": "生成失败，请重试。",
   "llmUnreadable": "AI 返回了无法读取的响应。请重试。",
   "llmIncomplete": "AI 返回了不完整的响应。请重试。",
   "emailInUse": "电子邮件已被使用。",
@@ -18,5 +18,7 @@
   "jobNotFound": "职位未找到。",
   "duplicateName": "您已有名为\"{name}\"的职位。名称必须唯一。",
   "invalidWebhookSignature": "无效的 webhook 签名。",
-  "noBillingAccount": "尚无计费账户。请先订阅套餐。"
+  "noBillingAccount": "尚无计费账户。请先订阅套餐。",
+  "platformBusy": "服务当前繁忙，请稍后重试。",
+  "invalidOrigin": "请求来源不被允许。"
 }

@@ -7,6 +7,12 @@ import { SignupDto } from './dto/signup.dto';
 import { AppException } from '../common/errors/app-exception';
 
 const REFRESH_TTL_MS = 7 * 24 * 3600 * 1000;
+const BCRYPT_COST = 12;
+const MAX_FAILED_LOGINS = 10;
+const LOCKOUT_MS = 15 * 60 * 1000;
+// Constant hash to compare against when the user doesn't exist — equalizes login
+// timing so an attacker can't distinguish "no such email" from "wrong password".
+const DUMMY_HASH = bcrypt.hashSync('winprop-timing-equalizer', BCRYPT_COST);
 
 const PROFESSION_DEFAULTS: Record<string, { services: string[]; skills: string[] }> = {
   developer: { services: ['SaaS Platforms', 'Backend Architecture'], skills: ['Next.js', 'NestJS', 'PostgreSQL'] },
@@ -25,7 +31,7 @@ export class AuthService {
   async signup(dto: SignupDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new AppException(400, 'VALIDATION', 'errors.emailInUse');
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
     const defs = PROFESSION_DEFAULTS[dto.profession];
 
     const { user, org, membership } = await this.prisma.$transaction(async (tx: any) => {
@@ -40,10 +46,27 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email }, include: { memberships: true } });
-    if (!user || !(await bcrypt.compare(password, user.passwordHash)))
+    // Lockout (after MAX_FAILED_LOGINS) — neutral 401 so it doesn't reveal the email exists.
+    if (user?.lockedUntil && user.lockedUntil.getTime() > Date.now())
       throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidCredentials');
+    // Always run a bcrypt compare (dummy when no user) to equalize timing — anti-enumeration.
+    const ok = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+    if (!user || !ok) {
+      if (user) await this.recordFailedLogin(user.id, user.failedLoginCount);
+      throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidCredentials');
+    }
+    if (user.failedLoginCount > 0 || user.lockedUntil)
+      await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginCount: 0, lockedUntil: null } });
     const m = user.memberships[0];
     return this.issueTokens(user.id, m.orgId, m.role);
+  }
+
+  private async recordFailedLogin(userId: string, current: number) {
+    const next = current + 1;
+    const data = next >= MAX_FAILED_LOGINS
+      ? { failedLoginCount: 0, lockedUntil: new Date(Date.now() + LOCKOUT_MS) }
+      : { failedLoginCount: next };
+    await this.prisma.user.update({ where: { id: userId }, data }).catch(() => undefined);
   }
 
   // Mints an access token and a refresh token whose `jti` is persisted to the
@@ -79,14 +102,26 @@ export class AuthService {
     });
     if (!membership) throw new AppException(401, 'UNAUTHORIZED', 'errors.accessRevoked');
 
-    // Rotate: issue the new pair first, then revoke the old jti pointing at the new one.
+    // Atomically CLAIM the old jti (single-winner). If two requests race with the same
+    // token, only one flips revokedAt null->now; the loser (count 0) is treated as reuse.
+    const claim = await this.prisma.refreshToken.updateMany({
+      where: { jti: payload.jti, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    if (claim.count === 0) {
+      await this.revokeAllForUser(payload.sub);
+      throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidRefreshToken');
+    }
     const tokens = await this.issueTokens(payload.sub, payload.orgId, membership.role); // CURRENT role
     const newJti = (this.jwt.decode(tokens.refreshToken) as any)?.jti;
-    await this.prisma.refreshToken.update({
-      where: { jti: payload.jti },
-      data: { revokedAt: new Date(), replacedById: newJti },
-    });
+    await this.prisma.refreshToken.update({ where: { jti: payload.jti }, data: { replacedById: newJti } });
     return tokens;
+  }
+
+  // Revoke every active refresh token for a user ("logout everywhere"). Public for /auth/logout-all.
+  async revokeAllForUser(userId: string) {
+    await this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    return { ok: true };
   }
 
   // Logout: revoke the presented refresh token (no-op if already gone/invalid).
@@ -100,9 +135,5 @@ export class AuthService {
         .catch(() => undefined);
     }
     return { ok: true };
-  }
-
-  private async revokeAllForUser(userId: string) {
-    await this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
   }
 }

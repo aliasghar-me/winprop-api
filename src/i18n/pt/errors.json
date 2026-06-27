@@ -1,7 +1,7 @@
 {
   "llmNotConfigured": "Nenhum provedor LLM está configurado. Contate o administrador.",
   "llmProviderUnavailable": "O provedor {provider} não está disponível.",
-  "llmGenerationFailed": "Falha na geração: {message}",
+  "llmGenerationFailed": "Falha na geração. Tente novamente.",
   "llmUnreadable": "A IA retornou uma resposta ilegível. Por favor, tente novamente.",
   "llmIncomplete": "A IA retornou uma resposta incompleta. Por favor, tente novamente.",
   "emailInUse": "E-mail já em uso.",
@@ -18,5 +18,7 @@
   "jobNotFound": "Vaga não encontrada.",
   "duplicateName": "Você já tem uma vaga chamada \"{name}\". Os nomes devem ser únicos.",
   "invalidWebhookSignature": "Assinatura de webhook inválida.",
-  "noBillingAccount": "Ainda não há conta de cobrança. Assine um plano primeiro."
+  "noBillingAccount": "Ainda não há conta de cobrança. Assine um plano primeiro.",
+  "platformBusy": "O serviço está ocupado no momento. Tente novamente em breve.",
+  "invalidOrigin": "Origem da solicitação não permitida."
 }
