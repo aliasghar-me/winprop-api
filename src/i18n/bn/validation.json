@@ -10,5 +10,7 @@
   "min": "{property} অন্তত {0} হতে হবে।",
   "isArray": "{property} একটি তালিকা হতে হবে।",
   "isHexColor": "{property} একটি বৈধ হেক্স রঙ হতে হবে।",
-  "isObject": "{property} একটি অবজেক্ট হতে হবে।"
+  "isObject": "{property} একটি অবজেক্ট হতে হবে।",
+  "isUrl": "{property} একটি বৈধ URL হতে হবে।",
+  "arrayMaxSize": "{property} সর্বোচ্চ {0}টি আইটেম থাকতে পারে।"
 }
