@@ -27,6 +27,10 @@ export class JobsController {
   @ApiOkResponse({ type: [JobDto] })
   list(@CurrentUser() u: JwtUser) { return this.jobs.list(u.orgId); }
 
+  @Get(':id')
+  @ApiOkResponse({ type: JobDto })
+  getOne(@CurrentUser() u: JwtUser, @Param('id') id: string) { return this.jobs.getOwned(u.orgId, id); }
+
   @Patch(':id') @Roles('owner', 'admin', 'member')
   @ApiOkResponse({ type: JobDto })
   update(@CurrentUser() u: JwtUser, @Param('id') id: string, @Body() dto: UpdateJobDto) {
