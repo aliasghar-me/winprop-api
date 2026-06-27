@@ -60,7 +60,7 @@ export class AuthService {
 
   async refresh(refreshToken: string) {
     let payload: any;
-    try { payload = this.jwt.verify(refreshToken); } catch { throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidRefreshToken'); }
+    try { payload = this.jwt.verify(refreshToken, { algorithms: ["HS256"] }); } catch { throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidRefreshToken'); }
     if (payload.typ !== 'refresh' || !payload.jti) throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidRefreshToken');
 
     const stored = await this.prisma.refreshToken.findUnique({ where: { jti: payload.jti } });
@@ -93,7 +93,7 @@ export class AuthService {
   async logout(refreshToken?: string) {
     if (!refreshToken) return { ok: true };
     let payload: any;
-    try { payload = this.jwt.verify(refreshToken); } catch { return { ok: true }; }
+    try { payload = this.jwt.verify(refreshToken, { algorithms: ["HS256"] }); } catch { return { ok: true }; }
     if (payload?.jti) {
       await this.prisma.refreshToken
         .updateMany({ where: { jti: payload.jti, revokedAt: null }, data: { revokedAt: new Date() } })

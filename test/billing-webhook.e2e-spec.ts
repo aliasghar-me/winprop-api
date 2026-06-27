@@ -83,6 +83,22 @@ describe('Billing webhook (durable inbox, async processing)', () => {
     expect(await prisma.processedEvent.count()).toBe(1); // recorded once
   });
 
+  it('binds by Stripe customer — forged metadata.orgId cannot hijack another org', async () => {
+    // Second org with NO stripe customer; attacker-style event uses orgA's customer
+    // (cus_1) but points metadata at orgB. The customer mapping must win.
+    await request(app.getHttpServer()).post('/auth/signup').send({ email: 'victim@x.com', password: 'pw1234567', name: 'V', agencyName: 'V', profession: 'designer' });
+    const orgB = (await prisma.org.findFirst({ where: { stripeCustomerId: null } }))!;
+    const evt = makeEvent(orgId);
+    evt.id = 'evt_bind'; evt.data.object.id = 'sub_bind';
+    (evt.data.object as any).metadata = { orgId: orgB.id }; // forged target
+    stripeMock.webhooks.constructEvent.mockReturnValue(evt);
+    await request(app.getHttpServer()).post('/billing/webhook').set('stripe-signature', 't').send(evt);
+    expect(await waitForStatus('evt_bind', 'done')).toBe('done');
+    const after = await prisma.org.findUnique({ where: { id: orgB.id } });
+    expect(after?.plan).toBe('free'); // orgB untouched — metadata did NOT override the customer binding
+    stripeMock.webhooks.constructEvent.mockReturnValue(event); // restore
+  });
+
   it('recovers a row left pending by a crash (durability backstop)', async () => {
     // Simulate: event was queued, but the process died before any drain ran.
     const evt = makeEvent(orgId);
