@@ -17,7 +17,13 @@ export class SuperAdminService {
       throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidCredentials');
     const token = this.jwt.sign(
       { sub: admin.id, email: admin.email, scope: 'super-admin' },
-      { expiresIn: (process.env.SUPER_ADMIN_TOKEN_TTL || '1h') as `${number}h` },
+      {
+        expiresIn: (process.env.SUPER_ADMIN_TOKEN_TTL || '1h') as `${number}h`,
+        // Separate signing secret for the privileged scope when provided, so a leak
+        // of the user JWT secret can't mint super-admin tokens (security #8).
+        secret: process.env.SUPER_ADMIN_JWT_SECRET || process.env.JWT_SECRET,
+        algorithm: 'HS256',
+      },
     );
     return { token };
   }

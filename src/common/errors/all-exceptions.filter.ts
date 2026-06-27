@@ -8,7 +8,7 @@ import { AppException } from './app-exception.js';
 const EN_FALLBACK: Record<string, string> = {
   'errors.llmNotConfigured': 'No LLM provider is configured. Ask the platform admin.',
   'errors.llmProviderUnavailable': 'Provider {provider} is not available.',
-  'errors.llmGenerationFailed': 'Generation failed: {message}',
+  'errors.llmGenerationFailed': 'Generation failed. Please try again.',
   'errors.llmUnreadable': 'The AI returned an unreadable response. Please try again.',
   'errors.llmIncomplete': 'The AI returned an incomplete response. Please try again.',
   'errors.emailInUse': 'Email already in use.',
@@ -26,6 +26,8 @@ const EN_FALLBACK: Record<string, string> = {
   'errors.duplicateName': 'You already have a job named "{name}". Names must be unique.',
   'errors.invalidWebhookSignature': 'Invalid webhook signature.',
   'errors.noBillingAccount': 'No billing account yet. Subscribe to a plan first.',
+  'errors.platformBusy': 'The service is busy right now. Please try again shortly.',
+  'errors.invalidOrigin': 'Request origin not allowed.',
 };
 
 function interpolate(template: string, args?: Record<string, any>): string {

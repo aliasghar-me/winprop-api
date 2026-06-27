@@ -7,3 +7,6 @@ allowBuilds:
   prisma: true
   unrs-resolver: true
   '@scarf/scarf': false
+
+overrides:
+  multer: ">=2.2.0"

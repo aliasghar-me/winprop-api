@@ -6,6 +6,8 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 @Injectable()
 export class AppThrottlerGuard extends ThrottlerGuard {
   protected shouldSkip(): Promise<boolean> {
-    return Promise.resolve(process.env.THROTTLE_DISABLED === '1');
+    // Kill-switch is honored ONLY outside production, so it can never silently
+    // disable rate limiting on a live deployment (security #10).
+    return Promise.resolve(process.env.THROTTLE_DISABLED === '1' && process.env.NODE_ENV !== 'production');
   }
 }
