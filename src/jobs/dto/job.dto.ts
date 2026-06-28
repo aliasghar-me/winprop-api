@@ -14,5 +14,7 @@ export class JobDto {
   @ApiPropertyOptional({ nullable: true }) budget?: number | null;
   @ApiPropertyOptional({ nullable: true }) timeline?: string | null;
   @ApiProperty({ enum: JobStatus }) status: JobStatus;
+  @ApiPropertyOptional({ type: Object, nullable: true, description: 'AI Job-Intelligence analysis (null until generated).' })
+  intelligenceJson?: Record<string, unknown> | null;
   @ApiProperty({ format: 'date-time' }) createdAt: Date;
 }

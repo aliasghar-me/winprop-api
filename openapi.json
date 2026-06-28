@@ -300,6 +300,34 @@
         ]
       }
     },
+    "/jobs/{id}/intelligence": {
+      "post": {
+        "operationId": "JobsController_analyze",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI Job-Intelligence analysis (objective, stack, risks, clarification questions, win-probability)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/admin/login": {
       "post": {
         "operationId": "AdminController_login",
@@ -1152,6 +1180,11 @@
               "lost"
             ],
             "type": "string"
+          },
+          "intelligenceJson": {
+            "type": "object",
+            "nullable": true,
+            "description": "AI Job-Intelligence analysis (null until generated)."
           },
           "createdAt": {
             "format": "date-time",

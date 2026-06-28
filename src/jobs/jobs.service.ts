@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { LlmService } from '../llm/llm.service';
 import { AppException } from '../common/errors/app-exception';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -11,7 +12,38 @@ const RICH_FIELDS = ['clientName', 'clientEmail', 'clientWebsite', 'projectDescr
 
 @Injectable()
 export class JobsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private llm: LlmService) {}
+
+  // Generate the AI Job-Intelligence analysis, persist it on the job, log cost.
+  async analyze(orgId: string, jobId: string) {
+    const job = await this.getOwned(orgId, jobId);
+    const profile = await this.prisma.profile.findUnique({ where: { orgId } });
+    const org = await this.prisma.org.findUnique({ where: { id: orgId } });
+    if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
+
+    const gen = await this.llm.analyzeJob({ ...profile, profession: org!.profession } as never, job);
+    let analysis: any;
+    try {
+      analysis = JSON.parse(gen.text);
+    } catch {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmUnreadable');
+    }
+    if (!analysis || typeof analysis !== 'object' || typeof analysis.objective !== 'string') {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.job.update({ where: { id: job.id }, data: { intelligenceJson: analysis } }),
+      this.prisma.generationLog.create({
+        data: {
+          orgId, jobId: job.id, provider: gen.provider, model: gen.model,
+          promptTokens: gen.promptTokens, completionTokens: gen.completionTokens,
+          costUsd: gen.costUsd, priceMapVersion: gen.priceMapVersion,
+        },
+      }),
+    ]);
+    return analysis;
+  }
 
   // Throws DUPLICATE_NAME if another job in the org has the same normalized title.
   private async assertTitleFree(orgId: string, title: string, exceptId?: string) {

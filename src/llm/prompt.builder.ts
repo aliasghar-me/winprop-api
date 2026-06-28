@@ -14,6 +14,28 @@ export function buildProposalPrompt(profile: Profile & { profession?: string }, 
   return { system, user };
 }
 
+// Job-Intelligence (Phase-1) analysis prompt. Strictly grounded in the job text +
+// studio profile — must not invent client history or facts not present.
+export function buildJobIntelligencePrompt(profile: Profile & { profession?: string }, job: Job) {
+  const system = [
+    `You are a senior proposal strategist and solutions architect analyzing an opportunity for ${profile.agencyName}, a ${profile.profession ?? 'professional'} studio.`,
+    `Analyze ONLY from the job text and the studio profile below. Do not fabricate client history, names, or facts not present. Be realistic and concise.`,
+  ].join(' ');
+  const user = [
+    `Analyze this opportunity.`,
+    `Title: ${job.title}`,
+    job.company && job.company !== '—' ? `Company: ${job.company}` : '',
+    job.projectDescription ? `Project: ${job.projectDescription}` : '',
+    job.requirements ? `Requirements: ${job.requirements}` : '',
+    job.budget ? `Stated budget (USD): ${job.budget}` : '',
+    job.timeline ? `Stated timeline: ${job.timeline}` : '',
+    `Our services: ${profile.services.join(', ')}. Our skills: ${profile.skills.join(', ')}. Our price range: $${profile.priceMin}-$${profile.priceMax}.`,
+    `Return JSON with keys: objective (string), domain (string), seniority (string), complexity ("Low"|"Medium"|"High"), estimatedWeeks (number), estimatedBudgetUsd (number), stack (string[]), deliverables (string[]), integrations (string[]), risks (array of {title (string), severity ("low"|"medium"|"high"), note (string)}), clarificationQuestions (array of up to 6 high-value question strings), winProbability (object {score (number 0-100), reasons (string[]), improvements (string[])}).`,
+    `Base winProbability on the honest fit between this job and our skills/price range. Return nothing else.`,
+  ].filter(Boolean).join('\n');
+  return { system, user };
+}
+
 // Section name (editor) -> content key + expected JSON type. Used by the
 // per-section regenerate flow so we re-bill a small call instead of the whole doc.
 export const PROPOSAL_SECTIONS = {
