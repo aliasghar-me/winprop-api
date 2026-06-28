@@ -31,6 +31,10 @@ export class JobsController {
   @ApiOkResponse({ type: JobDto })
   getOne(@CurrentUser() u: JwtUser, @Param('id') id: string) { return this.jobs.getOwned(u.orgId, id); }
 
+  @Post(':id/intelligence') @Roles('owner', 'admin', 'member')
+  @ApiOkResponse({ description: 'AI Job-Intelligence analysis (objective, stack, risks, clarification questions, win-probability).' })
+  analyze(@CurrentUser() u: JwtUser, @Param('id') id: string) { return this.jobs.analyze(u.orgId, id); }
+
   @Patch(':id') @Roles('owner', 'admin', 'member')
   @ApiOkResponse({ type: JobDto })
   update(@CurrentUser() u: JwtUser, @Param('id') id: string, @Body() dto: UpdateJobDto) {
