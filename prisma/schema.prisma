@@ -147,6 +147,9 @@ model Job {
   requirements       String?
   budget             Int? // whole currency units, nullable
   timeline           String? // free text, e.g. "6 weeks"
+  // AI Job-Intelligence analysis (Phase-1): objective, stack, deliverables, risks,
+  // clarification questions, win-probability. Generated on demand, grounded in the job text.
+  intelligenceJson   Json?
   status             JobStatus  @default(draft)
   createdAt          DateTime   @default(now())
   documents          Document[]

@@ -13,8 +13,40 @@ export class MockProvider implements LlmProvider {
   readonly vendor = 'mock' as const;
 
   async generate(_model: string, _apiKey: string, messages: LlmMessages): Promise<LlmResult> {
-    const job = /job "([^"]+)"/.exec(messages.user)?.[1] ?? 'the project';
+    const job = /job "([^"]+)"/.exec(messages.user)?.[1] ?? /Title: (.+)/.exec(messages.user)?.[1] ?? 'the project';
     const client = /client: ([^)]+)\)/.exec(messages.user)?.[1] ?? 'the client';
+
+    // Job-Intelligence analysis path.
+    if (messages.user.includes('Return JSON with keys: objective')) {
+      const analysis = {
+        objective: `Deliver ${job} with a modern, reliable build and a smooth launch.`,
+        domain: 'Web / SaaS',
+        seniority: 'Senior',
+        complexity: 'Medium',
+        estimatedWeeks: 8,
+        estimatedBudgetUsd: 32000,
+        stack: ['Next.js', 'TypeScript', 'PostgreSQL', 'Tailwind CSS'],
+        deliverables: ['Discovery & specification', 'Design system & UI', 'Core build', 'QA & accessibility', 'Launch & handover'],
+        integrations: ['Auth provider', 'Payments', 'Analytics'],
+        risks: [
+          { title: 'Scope ambiguity', severity: 'medium', note: 'Several requirements are implied rather than stated — confirm before fixing the price.' },
+          { title: 'Timeline pressure', severity: 'low', note: 'Stated timeline is achievable if discovery starts promptly.' },
+        ],
+        clarificationQuestions: [
+          'What does success look like 90 days after launch?',
+          'Are there existing brand or design assets to work from?',
+          'Which integrations are must-have for v1 vs later?',
+          'Who is the decision-maker and what is the approval process?',
+          'Is the stated budget fixed or flexible for the right approach?',
+        ],
+        winProbability: {
+          score: 72,
+          reasons: ['Strong overlap between the brief and your core skills', 'Budget sits within your typical range'],
+          improvements: ['Lead with a directly comparable case study', 'Answer the top clarification question in your opening'],
+        },
+      };
+      return this.result(JSON.stringify(analysis));
+    }
 
     // Per-section regenerate path asks for a single "value" key.
     const section = /Regenerate ONLY the "([^"]+)" section/.exec(messages.user)?.[1];

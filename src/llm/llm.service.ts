@@ -3,7 +3,7 @@ import { Profile, Job } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/crypto/crypto.service';
 import { LlmProvider } from './llm-provider.interface';
-import { buildProposalPrompt, buildSectionPrompt, PROPOSAL_SECTIONS, ProposalSection } from './prompt.builder';
+import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, PROPOSAL_SECTIONS, ProposalSection } from './prompt.builder';
 import { costUsd, PRICE_MAP_VERSION } from './pricing';
 import { AppException } from '../common/errors/app-exception';
 
@@ -52,6 +52,33 @@ export class LlmService {
     } catch (e: any) {
       // Log the upstream detail server-side; return a generic message (no provider/status leak, #15).
       this.logger.error(`LLM generate failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
+    }
+    return {
+      text: result.text,
+      provider: cfg.provider,
+      model: cfg.model,
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
+      costUsd: costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens),
+      priceMapVersion: PRICE_MAP_VERSION,
+    };
+  }
+
+  // Job-Intelligence analysis: returns the raw JSON text + usage/cost (caller parses + persists).
+  async analyzeJob(profile: Profile & { profession?: string }, job: Job) {
+    await this.assertPlatformBudget();
+    const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
+    if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
+    const provider = this.resolveProvider(cfg.provider);
+    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
+    const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
+    const messages = buildJobIntelligencePrompt(profile, job);
+    let result;
+    try {
+      result = await provider.generate(cfg.model, apiKey, messages);
+    } catch (e: any) {
+      this.logger.error(`LLM analyzeJob failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
       throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
     }
     return {
