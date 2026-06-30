@@ -27,7 +27,7 @@ describe('Auth hardening (lockout, logout-all, origin)', () => {
     for (let i = 0; i < 10; i++) {
       await request(app.getHttpServer()).post('/auth/login').send({ email: 'lock@x.com', password: 'wrong-pw' });
     }
-    const user = await prisma.user.findUnique({ where: { email: 'lock@x.com' } });
+    const user = await prisma.user.findFirst(); // single user after truncate (email is now ciphertext, not a lookup key)
     expect(user?.lockedUntil).not.toBeNull();
     // even the CORRECT password is refused while locked
     const res = await request(app.getHttpServer()).post('/auth/login').send({ email: 'lock@x.com', password: 'pw1234567' });

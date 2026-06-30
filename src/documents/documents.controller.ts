@@ -7,6 +7,7 @@ import { Roles } from '../auth/decorators/roles';
 import { CurrentUser } from '../auth/decorators/current-user';
 import type { JwtUser } from '../auth/jwt.strategy';
 import { QuotaGuard } from './quota.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { DocumentsService } from './documents.service';
 import { DocumentDto } from './dto/document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -19,7 +20,7 @@ import { RegenerateSectionDto } from './dto/regenerate-section.dto';
 export class DocumentsController {
   constructor(private docs: DocumentsService) {}
 
-  @Post() @Roles('owner', 'admin', 'member') @UseGuards(QuotaGuard)
+  @Post() @Roles('owner', 'admin', 'member') @UseGuards(EmailVerifiedGuard, QuotaGuard)
   @ApiCreatedResponse({ type: DocumentDto })
   generate(@CurrentUser() u: JwtUser, @Param('jobId') jobId: string, @Req() req: Request) {
     return this.docs.generateProposal(u.orgId, jobId, (req as any).quotaReservation);
@@ -56,7 +57,7 @@ export class DocumentsController {
   }
 
   // Per-section AI regenerate — quota-gated (each AI call consumes one slot).
-  @Post(':docId/regenerate-section') @Roles('owner', 'admin', 'member') @UseGuards(QuotaGuard)
+  @Post(':docId/regenerate-section') @Roles('owner', 'admin', 'member') @UseGuards(EmailVerifiedGuard, QuotaGuard)
   regenerateSection(
     @CurrentUser() u: JwtUser,
     @Param('jobId') jobId: string,

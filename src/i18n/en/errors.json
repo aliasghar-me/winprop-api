@@ -20,5 +20,11 @@
   "invalidWebhookSignature": "Invalid webhook signature.",
   "noBillingAccount": "No billing account yet. Subscribe to a plan first.",
   "platformBusy": "The service is busy right now. Please try again shortly.",
-  "invalidOrigin": "Request origin not allowed."
+  "invalidOrigin": "Request origin not allowed.",
+  "emailNotVerified": "Please verify your email address to generate proposals.",
+  "invalidVerificationToken": "This verification link is invalid or has expired.",
+  "mfaRequired": "A two-factor code is required.",
+  "mfaInvalid": "That two-factor code is invalid.",
+  "mfaAlreadyEnabled": "Two-factor authentication is already enabled.",
+  "mfaNotEnrolled": "Start two-factor enrollment first."
 }
