@@ -81,7 +81,7 @@ export class JobsService {
     await this.assertTitleFree(orgId, dto.title);
     const rich = this.pickRich(dto);
     try {
-      return await this.prisma.job.create({
+      return await this.prisma.db.job.create({
         data: { orgId, title: dto.title.trim(), company: dto.company ?? '—', ...rich },
       });
     } catch (e: any) {
@@ -109,11 +109,11 @@ export class JobsService {
   }
 
   list(orgId: string) {
-    return this.prisma.job.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' } });
+    return this.prisma.db.job.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' } });
   }
 
   async getOwned(orgId: string, jobId: string) {
-    const job = await this.prisma.job.findFirst({ where: { id: jobId, orgId } });
+    const job = await this.prisma.db.job.findFirst({ where: { id: jobId, orgId } });
     if (!job) throw new AppException(404, 'NOT_FOUND', 'errors.jobNotFound');
     return job;
   }
