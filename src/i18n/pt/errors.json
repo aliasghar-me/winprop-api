@@ -20,5 +20,11 @@
   "invalidWebhookSignature": "Assinatura de webhook inválida.",
   "noBillingAccount": "Ainda não há conta de cobrança. Assine um plano primeiro.",
   "platformBusy": "O serviço está ocupado no momento. Tente novamente em breve.",
-  "invalidOrigin": "Origem da solicitação não permitida."
+  "invalidOrigin": "Origem da solicitação não permitida.",
+  "emailNotVerified": "Verifique o seu endereço de e-mail para gerar propostas.",
+  "invalidVerificationToken": "Este link de verificação é inválido ou expirou.",
+  "mfaRequired": "É necessário um código de dois fatores.",
+  "mfaInvalid": "Esse código de dois fatores é inválido.",
+  "mfaAlreadyEnabled": "A autenticação de dois fatores já está ativada.",
+  "mfaNotEnrolled": "Inicie primeiro o registo de dois fatores."
 }

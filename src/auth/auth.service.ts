@@ -3,8 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 import { SignupDto } from './dto/signup.dto';
 import { AppException } from '../common/errors/app-exception';
+import { EmailVerificationService } from './email-verification.service';
 
 const REFRESH_TTL_MS = 7 * 24 * 3600 * 1000;
 const BCRYPT_COST = 12;
@@ -26,26 +28,35 @@ const PROFESSION_DEFAULTS: Record<string, { services: string[]; skills: string[]
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private emailVerification: EmailVerificationService,
+    private crypto: CryptoService,
+  ) {}
 
   async signup(dto: SignupDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({ where: { emailHash: this.crypto.hmac(dto.email) } });
     if (existing) throw new AppException(400, 'VALIDATION', 'errors.emailInUse');
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
     const defs = PROFESSION_DEFAULTS[dto.profession];
 
     const { user, org, membership } = await this.prisma.$transaction(async (tx: any) => {
-      const user = await tx.user.create({ data: { email: dto.email, passwordHash, name: dto.name } });
+      // email + name are stored encrypted; emailHash is the deterministic blind index.
+      const user = await tx.user.create({ data: { email: this.crypto.encrypt(dto.email), emailHash: this.crypto.hmac(dto.email), passwordHash, name: this.crypto.encrypt(dto.name) } });
       const org = await tx.org.create({ data: { name: dto.agencyName, profession: dto.profession } });
       const membership = await tx.membership.create({ data: { userId: user.id, orgId: org.id, role: 'owner' } });
       await tx.profile.create({ data: { orgId: org.id, agencyName: dto.agencyName, services: defs.services, skills: defs.skills } });
       return { user, org, membership };
     });
+    // Send the verification email (auto-login still applies; generation is gated
+    // until verified). Non-fatal so a mail hiccup never blocks signup.
+    await this.emailVerification.issueForUser(user.id, dto.email).catch(() => undefined);
     return this.issueTokens(user.id, org.id, membership.role);
   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email }, include: { memberships: true } });
+    const user = await this.prisma.user.findUnique({ where: { emailHash: this.crypto.hmac(email) }, include: { memberships: true } });
     // Lockout (after MAX_FAILED_LOGINS) — neutral 401 so it doesn't reveal the email exists.
     if (user?.lockedUntil && user.lockedUntil.getTime() > Date.now())
       throw new AppException(401, 'UNAUTHORIZED', 'errors.invalidCredentials');

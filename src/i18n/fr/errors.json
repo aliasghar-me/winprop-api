@@ -20,5 +20,11 @@
   "invalidWebhookSignature": "Signature webhook invalide.",
   "noBillingAccount": "Aucun compte de facturation pour l'instant. Abonnez-vous d'abord à un forfait.",
   "platformBusy": "Le service est momentanément occupé. Réessayez bientôt.",
-  "invalidOrigin": "Origine de la requête non autorisée."
+  "invalidOrigin": "Origine de la requête non autorisée.",
+  "emailNotVerified": "Veuillez vérifier votre adresse e-mail pour générer des propositions.",
+  "invalidVerificationToken": "Ce lien de vérification est invalide ou a expiré.",
+  "mfaRequired": "Un code à deux facteurs est requis.",
+  "mfaInvalid": "Ce code à deux facteurs est invalide.",
+  "mfaAlreadyEnabled": "L’authentification à deux facteurs est déjà activée.",
+  "mfaNotEnrolled": "Commencez d’abord l’inscription à deux facteurs."
 }
