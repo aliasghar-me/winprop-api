@@ -199,6 +199,9 @@ model DocumentVersion {
   version     Int
   title       String
   contentJson Json
+  // How the change at this point in the timeline was produced (T1.3): null = plain
+  // edit; "tone-adjust" / "pricing-adjust" = AI adjustment.
+  label       String?
   createdAt   DateTime @default(now())
 
   @@index([documentId])
