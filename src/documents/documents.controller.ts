@@ -12,6 +12,7 @@ import { DocumentsService } from './documents.service';
 import { DocumentDto } from './dto/document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { RegenerateSectionDto } from './dto/regenerate-section.dto';
+import { AdjustToneDto } from './dto/adjust-tone.dto';
 
 @ApiTags('documents')
 @ApiBearerAuth()
@@ -66,5 +67,30 @@ export class DocumentsController {
     @Req() req: Request,
   ) {
     return this.docs.regenerateSection(u.orgId, jobId, docId, dto.section, (req as any).quotaReservation);
+  }
+
+  // Adjust tone — re-runs the prose sections in a new tone, saves a labeled version.
+  @Post(':docId/adjust-tone') @Roles('owner', 'admin', 'member') @UseGuards(EmailVerifiedGuard, QuotaGuard)
+  @ApiOkResponse({ type: DocumentDto })
+  adjustTone(
+    @CurrentUser() u: JwtUser,
+    @Param('jobId') jobId: string,
+    @Param('docId') docId: string,
+    @Body() dto: AdjustToneDto,
+    @Req() req: Request,
+  ) {
+    return this.docs.adjustTone(u.orgId, jobId, docId, dto.tone, (req as any).quotaReservation);
+  }
+
+  // Adjust pricing — re-runs the price within the agency's range, saves a labeled version.
+  @Post(':docId/adjust-pricing') @Roles('owner', 'admin', 'member') @UseGuards(EmailVerifiedGuard, QuotaGuard)
+  @ApiOkResponse({ type: DocumentDto })
+  adjustPricing(
+    @CurrentUser() u: JwtUser,
+    @Param('jobId') jobId: string,
+    @Param('docId') docId: string,
+    @Req() req: Request,
+  ) {
+    return this.docs.adjustPricing(u.orgId, jobId, docId, (req as any).quotaReservation);
   }
 }

@@ -844,6 +844,102 @@
         ]
       }
     },
+    "/jobs/{jobId}/documents/{docId}/adjust-tone": {
+      "post": {
+        "operationId": "DocumentsController_adjustTone",
+        "parameters": [
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustToneDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/jobs/{jobId}/documents/{docId}/adjust-pricing": {
+      "post": {
+        "operationId": "DocumentsController_adjustPricing",
+        "parameters": [
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
+    },
     "/billing/checkout": {
       "post": {
         "operationId": "BillingController_checkout",
@@ -1647,6 +1743,23 @@
         },
         "required": [
           "section"
+        ]
+      },
+      "AdjustToneDto": {
+        "type": "object",
+        "properties": {
+          "tone": {
+            "type": "string",
+            "enum": [
+              "formal",
+              "aggressive",
+              "premium",
+              "casual"
+            ]
+          }
+        },
+        "required": [
+          "tone"
         ]
       },
       "CheckoutDto": {
