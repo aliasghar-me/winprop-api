@@ -8,6 +8,7 @@ import { CurrentUser } from '../auth/decorators/current-user';
 import type { JwtUser } from '../auth/jwt.strategy';
 import { QuotaGuard } from '../documents/quota.guard';
 import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
+import { TenantGuard } from '../common/tenant/tenant.guard';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -16,7 +17,7 @@ import { JobDto } from './dto/job.dto';
 @ApiTags('jobs')
 @ApiBearerAuth()
 @Controller('jobs')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class JobsController {
   constructor(private jobs: JobsService) {}
 

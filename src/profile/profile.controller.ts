@@ -2,6 +2,7 @@ import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantGuard } from '../common/tenant/tenant.guard';
 import { Roles } from '../auth/decorators/roles';
 import { CurrentUser } from '../auth/decorators/current-user';
 import type { JwtUser } from '../auth/jwt.strategy';
@@ -12,7 +13,7 @@ import { ProfileDto } from './dto/profile.dto';
 @ApiTags('profile')
 @ApiBearerAuth()
 @Controller('profile')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class ProfileController {
   constructor(private profile: ProfileService) {}
 
