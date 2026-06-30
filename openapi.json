@@ -1211,6 +1211,42 @@
           "public"
         ]
       }
+    },
+    "/jobs/{jobId}/documents/{docId}/pdf": {
+      "get": {
+        "operationId": "ExportController_pdf",
+        "parameters": [
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Branded proposal PDF (application/pdf)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
     }
   },
   "info": {

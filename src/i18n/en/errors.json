@@ -27,5 +27,6 @@
   "mfaInvalid": "That two-factor code is invalid.",
   "mfaAlreadyEnabled": "Two-factor authentication is already enabled.",
   "mfaNotEnrolled": "Start two-factor enrollment first.",
-  "idempotencyConflict": "A request with this idempotency key is already in progress."
+  "idempotencyConflict": "A request with this idempotency key is already in progress.",
+  "exportFailed": "Could not generate the PDF. Please try again."
 }
