@@ -1,8 +1,9 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import * as path from 'path';
 import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import { TenantContextMiddleware } from './common/tenant/tenant-context.middleware.js';
+import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor.js';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './common/throttler/app-throttler.guard.js';
 import { ProfileModule } from './profile/profile.module.js';
@@ -49,7 +50,11 @@ import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolve
     PublicModule,
   ],
   controllers: [AppController, HealthController],
-  providers: [AppService, { provide: APP_GUARD, useClass: AppThrottlerGuard }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: AppThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
+  ],
 })
 export class AppModule implements NestModule {
   // Establish the tenant store for every request (TenantGuard fills orgId on

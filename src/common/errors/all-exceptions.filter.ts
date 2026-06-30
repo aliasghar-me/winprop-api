@@ -2,6 +2,7 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/co
 import { Response } from 'express';
 import { I18nContext, I18nValidationException } from 'nestjs-i18n';
 import { AppException } from './app-exception.js';
+import { captureException } from '../observability/sentry.js';
 
 // English fallback map — avoids JSON import issues with nodenext modules
 // Keys are "errors.<keyName>" matching the translationKey format used in throw sites
@@ -83,6 +84,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return res.status(status).json({ statusCode: status, code, message });
     }
 
+    // Unhandled (non-HttpException) — a real bug. Report to Sentry (no-op if unconfigured).
+    captureException(exception);
     return res.status(500).json({ statusCode: 500, code: 'INTERNAL', message: 'Internal error' });
   }
 
