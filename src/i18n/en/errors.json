@@ -26,5 +26,6 @@
   "mfaRequired": "A two-factor code is required.",
   "mfaInvalid": "That two-factor code is invalid.",
   "mfaAlreadyEnabled": "Two-factor authentication is already enabled.",
-  "mfaNotEnrolled": "Start two-factor enrollment first."
+  "mfaNotEnrolled": "Start two-factor enrollment first.",
+  "idempotencyConflict": "A request with this idempotency key is already in progress."
 }

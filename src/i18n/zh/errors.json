@@ -26,5 +26,6 @@
   "mfaRequired": "需要双重验证码。",
   "mfaInvalid": "该双重验证码无效。",
   "mfaAlreadyEnabled": "双重验证已启用。",
-  "mfaNotEnrolled": "请先开始双重验证注册。"
+  "mfaNotEnrolled": "请先开始双重验证注册。",
+  "idempotencyConflict": "使用此幂等键的请求已在处理中。"
 }
