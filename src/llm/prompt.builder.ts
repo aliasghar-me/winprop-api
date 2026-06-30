@@ -109,6 +109,36 @@ export const PROPOSAL_SECTIONS = {
 
 export type ProposalSection = keyof typeof PROPOSAL_SECTIONS;
 
+// T1.3 — "Adjust tone": the four tones map to concrete writing guidance.
+export const TONES = ['formal', 'aggressive', 'premium', 'casual'] as const;
+export type ToneName = (typeof TONES)[number];
+const TONE_GUIDANCE: Record<ToneName, string> = {
+  formal: 'precise, professional, and measured; no slang.',
+  aggressive: 'confident, outcome-led, and urgent; lead with results and momentum.',
+  premium: 'understated, selective, and quality-forward; calm authority, no hard sell.',
+  casual: 'warm, plain-spoken, and approachable; conversational but credible.',
+};
+
+// Re-run the PROSE sections (summary + closing) in a new tone, in one call.
+export function buildToneAdjustPrompt(
+  profile: Profile & { profession?: string },
+  job: Job,
+  tone: ToneName,
+  current: Record<string, unknown>,
+) {
+  const system = [
+    `You are a senior proposal writer for ${profile.agencyName}, a ${profile.profession ?? 'professional'} studio.`,
+    `Rewrite in a ${tone} tone — ${TONE_GUIDANCE[tone]} Keep the meaning and facts; change only the voice.`,
+  ].join(' ');
+  const user = [
+    `Rewrite ONLY the "summary" and "closing" of this proposal for "${job.title}" (client: ${job.company}) in the new tone.`,
+    proofContext(profile),
+    `Current proposal: ${JSON.stringify(current)}.`,
+    `Return JSON with exactly two keys: summary (string), closing (string). Return nothing else.`,
+  ].filter(Boolean).join('\n');
+  return { system, user };
+}
+
 export function buildSectionPrompt(
   profile: Profile & { profession?: string },
   job: Job,
