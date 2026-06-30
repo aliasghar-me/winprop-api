@@ -26,5 +26,6 @@
   "mfaRequired": "Se requiere un código de dos factores.",
   "mfaInvalid": "Ese código de dos factores no es válido.",
   "mfaAlreadyEnabled": "La autenticación de dos factores ya está activada.",
-  "mfaNotEnrolled": "Primero inicia el registro de dos factores."
+  "mfaNotEnrolled": "Primero inicia el registro de dos factores.",
+  "idempotencyConflict": "Ya hay una solicitud en curso con esta clave de idempotencia."
 }
