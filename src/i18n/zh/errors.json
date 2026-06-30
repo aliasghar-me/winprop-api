@@ -27,5 +27,6 @@
   "mfaInvalid": "该双重验证码无效。",
   "mfaAlreadyEnabled": "双重验证已启用。",
   "mfaNotEnrolled": "请先开始双重验证注册。",
-  "idempotencyConflict": "使用此幂等键的请求已在处理中。"
+  "idempotencyConflict": "使用此幂等键的请求已在处理中。",
+  "exportFailed": "无法生成 PDF，请重试。"
 }
