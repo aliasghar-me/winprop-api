@@ -19,6 +19,7 @@ import { AdminModule } from './admin/admin.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { BillingModule } from './billing/billing.module.js';
 import { UsersModule } from './users/users.module.js';
+import { ExportModule } from './export/export.module.js';
 import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolver.js';
 
 @Module({
@@ -48,6 +49,7 @@ import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolve
     UsersModule,
     ProfileModule,
     PublicModule,
+    ExportModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

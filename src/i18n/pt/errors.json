@@ -27,5 +27,6 @@
   "mfaInvalid": "Esse código de dois fatores é inválido.",
   "mfaAlreadyEnabled": "A autenticação de dois fatores já está ativada.",
   "mfaNotEnrolled": "Inicie primeiro o registo de dois fatores.",
-  "idempotencyConflict": "Já existe um pedido em curso com esta chave de idempotência."
+  "idempotencyConflict": "Já existe um pedido em curso com esta chave de idempotência.",
+  "exportFailed": "Não foi possível gerar o PDF. Tente novamente."
 }
