@@ -1247,6 +1247,32 @@
           "documents"
         ]
       }
+    },
+    "/analytics/summary": {
+      "get": {
+        "operationId": "AnalyticsController_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsSummaryDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "analytics"
+        ]
+      }
     }
   },
   "info": {
@@ -2148,6 +2174,42 @@
           "title",
           "contentJson",
           "updatedAt"
+        ]
+      },
+      "AnalyticsSummaryDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "byStatus": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "won": {
+            "type": "number"
+          },
+          "lost": {
+            "type": "number"
+          },
+          "sent": {
+            "type": "number"
+          },
+          "winRate": {
+            "type": "number",
+            "nullable": true,
+            "description": "won / (won + lost); null until a deal is decided"
+          }
+        },
+        "required": [
+          "total",
+          "byStatus",
+          "won",
+          "lost",
+          "sent",
+          "winRate"
         ]
       }
     }
