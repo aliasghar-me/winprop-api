@@ -3,18 +3,20 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { EmailVerificationService } from './email-verification.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user';
 import type { JwtUser } from './jwt.strategy';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { AuthTokenDto } from './dto/auth-token.dto';
 import { AppException } from '../common/errors/app-exception';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(private auth: AuthService, private emailVerification: EmailVerificationService) {}
 
   private setRefresh(res: Response, token: string) {
     res.cookie('refresh', token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 3600 * 1000 });
@@ -68,5 +70,19 @@ export class AuthController {
     await this.auth.revokeAllForUser(u.userId);
     res.clearCookie('refresh');
     return { ok: true };
+  }
+
+  // Confirm an email address from the link token (public — the user may be logged out).
+  @Post('verify-email')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.emailVerification.verify(dto.token);
+  }
+
+  // Re-send the verification link to the authenticated (still-unverified) user.
+  @Post('resend-verification') @UseGuards(JwtAuthGuard) @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  resendVerification(@CurrentUser() u: JwtUser) {
+    return this.emailVerification.resend(u.userId);
   }
 }

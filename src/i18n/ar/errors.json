@@ -20,5 +20,11 @@
   "invalidWebhookSignature": "توقيع webhook غير صالح.",
   "noBillingAccount": "لا يوجد حساب فوترة بعد. اشترك في خطة أولاً.",
   "platformBusy": "الخدمة مشغولة حاليًا. يرجى المحاولة بعد قليل.",
-  "invalidOrigin": "أصل الطلب غير مسموح به."
+  "invalidOrigin": "أصل الطلب غير مسموح به.",
+  "emailNotVerified": "يرجى تأكيد عنوان بريدك الإلكتروني لإنشاء العروض.",
+  "invalidVerificationToken": "رابط التأكيد هذا غير صالح أو منتهي الصلاحية.",
+  "mfaRequired": "يلزم إدخال رمز التحقق بخطوتين.",
+  "mfaInvalid": "رمز التحقق بخطوتين غير صحيح.",
+  "mfaAlreadyEnabled": "تم تفعيل التحقق بخطوتين بالفعل.",
+  "mfaNotEnrolled": "ابدأ تسجيل التحقق بخطوتين أولاً."
 }

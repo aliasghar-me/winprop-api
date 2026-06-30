@@ -20,7 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "openapi": "nest build && node dist/scripts/export-openapi.js",
-    "backfill:quota": "nest build && node dist/scripts/backfill-quota.js"
+    "backfill:quota": "nest build && node dist/scripts/backfill-quota.js",
+    "backfill:pii": "nest build && node dist/scripts/backfill-pii.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

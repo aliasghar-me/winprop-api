@@ -20,5 +20,11 @@
   "invalidWebhookSignature": "无效的 webhook 签名。",
   "noBillingAccount": "尚无计费账户。请先订阅套餐。",
   "platformBusy": "服务当前繁忙，请稍后重试。",
-  "invalidOrigin": "请求来源不被允许。"
+  "invalidOrigin": "请求来源不被允许。",
+  "emailNotVerified": "请验证您的电子邮件地址以生成提案。",
+  "invalidVerificationToken": "此验证链接无效或已过期。",
+  "mfaRequired": "需要双重验证码。",
+  "mfaInvalid": "该双重验证码无效。",
+  "mfaAlreadyEnabled": "双重验证已启用。",
+  "mfaNotEnrolled": "请先开始双重验证注册。"
 }

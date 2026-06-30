@@ -159,6 +159,49 @@
         ]
       }
     },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/resend-verification": {
+      "post": {
+        "operationId": "AuthController_resendVerification",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/jobs": {
       "post": {
         "operationId": "JobsController_create",
@@ -354,6 +397,68 @@
             }
           }
         },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/mfa/enroll": {
+      "post": {
+        "operationId": "AdminController_enrollMfa",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaEnrollDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/mfa/confirm": {
+      "post": {
+        "operationId": "AdminController_confirmMfa",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmMfaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "admin"
         ]
@@ -857,6 +962,33 @@
         ]
       }
     },
+    "/me": {
+      "get": {
+        "operationId": "UsersController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Current user (incl. email-verification status)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/language": {
       "patch": {
         "operationId": "UsersController_setLanguage",
@@ -1078,6 +1210,18 @@
           "password"
         ]
       },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
       "CreateJobDto": {
         "type": "object",
         "properties": {
@@ -1266,6 +1410,11 @@
           },
           "password": {
             "type": "string"
+          },
+          "totpCode": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "TOTP code (required once MFA is enrolled)"
           }
         },
         "required": [
@@ -1282,6 +1431,44 @@
         },
         "required": [
           "token"
+        ]
+      },
+      "MfaEnrollDto": {
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string"
+          },
+          "otpauthUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret",
+          "otpauthUrl"
+        ]
+      },
+      "ConfirmMfaDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "OkDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
         ]
       },
       "SetLlmDto": {
@@ -1305,17 +1492,6 @@
           "provider",
           "model",
           "apiKey"
-        ]
-      },
-      "OkDto": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ok"
         ]
       },
       "LlmStatusDto": {
@@ -1545,6 +1721,29 @@
         },
         "required": [
           "received"
+        ]
+      },
+      "MeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "emailVerified"
         ]
       },
       "UpdateLanguageDto": {
