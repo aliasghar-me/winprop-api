@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { json } from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { validateEnv } from './config/validate-env';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
@@ -12,7 +13,8 @@ import { initSentry } from './common/observability/sentry';
 async function bootstrap() {
   validateEnv(); // fail closed on missing/weak/default secrets before anything else
   initSentry(); // error tracking (no-op unless SENTRY_DSN is set)
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const app = await NestFactory.create(AppModule, { bodyParser: false, bufferLogs: true });
+  app.useLogger(app.get(Logger)); // route Nest logs through pino (structured + correlation id)
   // Behind Caddy/Traefik: trust one proxy hop so req.ip is the real client (rate limiting).
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
   app.use(helmet()); // security headers (CSP/HSTS/XFO/no-sniff/referrer-policy)

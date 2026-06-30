@@ -1,6 +1,8 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
+import { LoggerModule } from 'nestjs-pino';
 import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import { TenantContextMiddleware } from './common/tenant/tenant-context.middleware.js';
 import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor.js';
@@ -24,6 +26,19 @@ import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolve
 
 @Module({
   imports: [
+    // Structured JSON logs with a per-request correlation id; redact secrets.
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? 'info',
+        autoLogging: process.env.THROTTLE_DISABLED !== '1', // quiet during e2e
+        genReqId: (req, res) => {
+          const id = (req.headers['x-request-id'] as string) || randomUUID();
+          res.setHeader('x-request-id', id);
+          return id;
+        },
+        redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["idempotency-key"]'],
+      },
+    }),
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {
