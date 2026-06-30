@@ -192,6 +192,22 @@ model Document {
 }
 
 // Snapshot of a document's content before an edit overwrote it (editor history, V1).
+// Idempotency keys (T2.4): dedupe client-retried mutations so e.g. a retried
+// generation doesn't double-charge quota. Claimed "pending" before the handler runs,
+// flipped to "completed" with the stored response after.
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  orgId        String
+  key          String
+  status       String   @default("pending")
+  statusCode   Int?
+  responseJson Json?
+  createdAt    DateTime @default(now())
+
+  @@unique([orgId, key])
+  @@index([orgId])
+}
+
 model DocumentVersion {
   id          String   @id @default(cuid())
   documentId  String
