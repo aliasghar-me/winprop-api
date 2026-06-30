@@ -57,7 +57,10 @@ enum LlmVendor {
 
 model User {
   id                String         @id @default(cuid())
-  email             String         @unique
+  // PII at rest (security #16): email + name are AES-256-GCM ciphertext. Lookups
+  // use emailHash (deterministic HMAC blind index) since the ciphertext varies.
+  email             String
+  emailHash         String?        @unique
   passwordHash      String
   name              String
   preferredLanguage String?
@@ -65,8 +68,25 @@ model User {
   // Account lockout (security #5)
   failedLoginCount  Int            @default(0)
   lockedUntil       DateTime?
+  // Email verification (security #1): null until the user confirms their address.
+  emailVerifiedAt   DateTime?
   memberships       Membership[]
   refreshTokens     RefreshToken[]
+  emailVerifications EmailVerificationToken[]
+}
+
+// Single-use, short-lived email-verification tokens. Only the SHA-256 hash of the
+// raw token is stored, so a DB leak can't be used to verify accounts (security #1).
+model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // H5: server-side refresh-token store for hard revocation + rotation. Each issued
@@ -223,6 +243,10 @@ model SuperAdmin {
   // H3: real auth. Nullable so the legacy seed row keeps working until a password
   // is set; login is refused for rows without a hash.
   passwordHash String?
+  // TOTP MFA (security #8): encrypted shared secret + the moment enrollment was
+  // confirmed. While totpEnabledAt is null the secret is "pending" (not enforced).
+  totpSecret    String?
+  totpEnabledAt DateTime?
   createdAt    DateTime            @default(now())
   auditLogs    SuperAdminAuditLog[]
 }

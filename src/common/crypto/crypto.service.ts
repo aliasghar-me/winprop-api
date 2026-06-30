@@ -21,4 +21,19 @@ export class CryptoService {
     decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
     return Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]).toString('utf8');
   }
+
+  // Deterministic keyed hash for blind-index lookups (e.g. find a user by email
+  // without storing the email in cleartext). Same input → same output, so it can
+  // back a UNIQUE column; not reversible.
+  hmac(value: string): string {
+    return crypto.createHmac('sha256', this.key).update(value).digest('hex');
+  }
+
+  // Tolerant decrypt for the plaintext→ciphertext transition: values written
+  // before field-encryption (or by a backfill that hasn't run) are returned as-is.
+  decryptSafe(value: string | null | undefined): string {
+    if (!value) return '';
+    if (!/^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(value)) return value; // not our ciphertext shape
+    try { return this.decrypt(value); } catch { return value; }
+  }
 }
