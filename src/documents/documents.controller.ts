@@ -8,6 +8,7 @@ import { CurrentUser } from '../auth/decorators/current-user';
 import type { JwtUser } from '../auth/jwt.strategy';
 import { QuotaGuard } from './quota.guard';
 import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
+import { TenantGuard } from '../common/tenant/tenant.guard';
 import { DocumentsService } from './documents.service';
 import { DocumentDto } from './dto/document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -17,7 +18,7 @@ import { AdjustToneDto } from './dto/adjust-tone.dto';
 @ApiTags('documents')
 @ApiBearerAuth()
 @Controller('jobs/:jobId/documents')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class DocumentsController {
   constructor(private docs: DocumentsService) {}
 

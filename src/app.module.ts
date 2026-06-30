@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import * as path from 'path';
 import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
+import { TenantContextMiddleware } from './common/tenant/tenant-context.middleware.js';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './common/throttler/app-throttler.guard.js';
 import { ProfileModule } from './profile/profile.module.js';
@@ -50,4 +51,10 @@ import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolve
   controllers: [AppController, HealthController],
   providers: [AppService, { provide: APP_GUARD, useClass: AppThrottlerGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  // Establish the tenant store for every request (TenantGuard fills orgId on
+  // authenticated, tenant-scoped routes; the Prisma extension reads it).
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantContextMiddleware).forRoutes('*');
+  }
+}
