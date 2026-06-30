@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LlmService } from '../llm/llm.service';
 import { JobsService } from '../jobs/jobs.service';
 import { AppException } from '../common/errors/app-exception';
+import type { ToneName } from '../llm/prompt.builder';
 
 const shareBaseUrl = () =>
   process.env.PROPOSAL_SHARE_BASE_URL || `${process.env.WEB_ORIGIN?.split(',')[0] ?? 'https://proposal.winprop.ai'}/p`;
@@ -165,5 +166,85 @@ export class DocumentsService {
       await this.releaseQuota(reservation);
       throw e;
     }
+  }
+
+  // T1.3 — "Adjust tone": re-run the prose sections in a new tone (one LLM call),
+  // persist as a labeled timeline version. Quota-gated; releases on failure.
+  async adjustTone(
+    orgId: string,
+    jobId: string,
+    docId: string,
+    tone: ToneName,
+    reservation?: { orgId: string; periodStart: Date },
+  ) {
+    try {
+      const doc = await this.getOne(orgId, jobId, docId);
+      const job = await this.jobs.getOwned(orgId, jobId);
+      const profile = await this.prisma.profile.findUnique({ where: { orgId } });
+      const org = await this.prisma.org.findUnique({ where: { id: orgId } });
+      if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
+      const content = (doc.contentJson ?? {}) as Record<string, unknown>;
+      const gen = await this.llm.adjustToneProse({ ...profile, profession: org!.profession } as any, job, tone, content);
+      await this.logGeneration(orgId, jobId, gen);
+      return this.applyAdjustment(doc, { ...content, summary: gen.summary, closing: gen.closing }, 'tone-adjust');
+    } catch (e) {
+      await this.releaseQuota(reservation);
+      throw e;
+    }
+  }
+
+  // T1.3 — "Adjust pricing": re-run only the price, CLAMPED to the agency's range,
+  // persist as a labeled version. Quota-gated; releases on failure.
+  async adjustPricing(
+    orgId: string,
+    jobId: string,
+    docId: string,
+    reservation?: { orgId: string; periodStart: Date },
+  ) {
+    try {
+      const doc = await this.getOne(orgId, jobId, docId);
+      const job = await this.jobs.getOwned(orgId, jobId);
+      const profile = await this.prisma.profile.findUnique({ where: { orgId } });
+      const org = await this.prisma.org.findUnique({ where: { id: orgId } });
+      if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
+      const content = (doc.contentJson ?? {}) as Record<string, unknown>;
+      const gen = await this.llm.regenerateSection({ ...profile, profession: org!.profession } as any, job, 'pricing', content);
+      await this.logGeneration(orgId, jobId, gen);
+      // Bound the suggestion to the agency's pricing range (never present out-of-range).
+      const raw = Number(gen.value);
+      const price = Number.isFinite(raw) ? Math.min(profile.priceMax, Math.max(profile.priceMin, Math.round(raw))) : profile.priceMin;
+      return this.applyAdjustment(doc, { ...content, priceUsd: price }, 'pricing-adjust');
+    } catch (e) {
+      await this.releaseQuota(reservation);
+      throw e;
+    }
+  }
+
+  // Snapshot the current content into the timeline (tagged with `label`) and bump
+  // the live document to the adjusted content — mirrors update()'s versioning.
+  private async applyAdjustment(doc: any, nextContent: Record<string, unknown>, label: string) {
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.documentVersion.create({
+        data: { documentId: doc.id, version: doc.version, title: doc.title, contentJson: doc.contentJson as any, label },
+      });
+      return tx.document.update({
+        where: { id: doc.id },
+        data: { contentJson: nextContent as any, version: { increment: 1 } },
+      });
+    });
+  }
+
+  private async logGeneration(
+    orgId: string,
+    jobId: string,
+    gen: { provider: string; model: string; promptTokens: number; completionTokens: number; costUsd: number; priceMapVersion: string },
+  ) {
+    await this.prisma.generationLog.create({
+      data: {
+        orgId, jobId, provider: gen.provider, model: gen.model,
+        promptTokens: gen.promptTokens, completionTokens: gen.completionTokens,
+        costUsd: gen.costUsd, priceMapVersion: gen.priceMapVersion,
+      },
+    });
   }
 }

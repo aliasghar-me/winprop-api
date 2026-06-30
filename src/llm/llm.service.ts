@@ -3,7 +3,7 @@ import { Profile, Job } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/crypto/crypto.service';
 import { LlmProvider } from './llm-provider.interface';
-import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, PROPOSAL_SECTIONS, ProposalSection } from './prompt.builder';
+import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, buildToneAdjustPrompt, PROPOSAL_SECTIONS, ProposalSection, ToneName } from './prompt.builder';
 import { costUsd, PRICE_MAP_VERSION } from './pricing';
 import { AppException } from '../common/errors/app-exception';
 
@@ -124,6 +124,48 @@ export class LlmService {
     return {
       key: PROPOSAL_SECTIONS[section].key,
       value,
+      provider: cfg.provider,
+      model: cfg.model,
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
+      costUsd: costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens),
+      priceMapVersion: PRICE_MAP_VERSION,
+    };
+  }
+
+  // Re-run the prose sections (summary + closing) in a new tone — ONE LLM call so it
+  // bills as a single generation. Returns the two new strings + usage metadata.
+  async adjustToneProse(
+    profile: Profile & { profession?: string },
+    job: Job,
+    tone: ToneName,
+    current: Record<string, unknown>,
+  ) {
+    await this.assertPlatformBudget();
+    const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
+    if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
+    const provider = this.resolveProvider(cfg.provider);
+    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
+    const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
+    const messages = buildToneAdjustPrompt(profile, job, tone, current);
+    let result;
+    try {
+      result = await provider.generate(cfg.model, apiKey, messages);
+    } catch (e: any) {
+      this.logger.error(`LLM tone-adjust failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
+    }
+    let parsed: { summary?: unknown; closing?: unknown };
+    try {
+      parsed = JSON.parse(result.text);
+    } catch {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmUnreadable');
+    }
+    if (typeof parsed?.summary !== 'string' || typeof parsed?.closing !== 'string')
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
+    return {
+      summary: parsed.summary,
+      closing: parsed.closing,
       provider: cfg.provider,
       model: cfg.model,
       promptTokens: result.promptTokens,
