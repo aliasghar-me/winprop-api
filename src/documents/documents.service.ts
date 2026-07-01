@@ -5,6 +5,7 @@ import { LlmService } from '../llm/llm.service';
 import { JobsService } from '../jobs/jobs.service';
 import { AppException } from '../common/errors/app-exception';
 import type { ToneName } from '../llm/prompt.builder';
+import { DOC_TEMPLATES, validateDoc, isRegistryDocType, type RegistryDocType } from '../llm/doc-templates';
 
 const shareBaseUrl = () =>
   process.env.PROPOSAL_SHARE_BASE_URL || `${process.env.WEB_ORIGIN?.split(',')[0] ?? 'https://proposal.winprop.ai'}/p`;
@@ -17,6 +18,47 @@ export class DocumentsService {
   // below fails, we release it so a failed generation never consumes quota — the
   // same guarantee the old "write quota only on success" code gave, but now the
   // check+reserve is atomic and concurrency-safe.
+  // Dispatch generation by document type: proposal keeps its dedicated path;
+  // sow/estimate go through the template registry.
+  async generate(orgId: string, jobId: string, type: string, reservation?: { orgId: string; periodStart: Date }) {
+    if (isRegistryDocType(type)) return this.generateRegistryDoc(orgId, jobId, type, reservation);
+    return this.generateProposal(orgId, jobId, reservation);
+  }
+
+  // Generate a registry document (sow/estimate): registry prompt → validate against
+  // the template → persist a Document of that type. Mirrors generateProposal's quota
+  // release-on-failure guarantee.
+  private async generateRegistryDoc(orgId: string, jobId: string, type: RegistryDocType, reservation?: { orgId: string; periodStart: Date }) {
+    try {
+      const job = await this.jobs.getOwned(orgId, jobId);
+      const profile = await this.prisma.profile.findUnique({ where: { orgId } });
+      const org = await this.prisma.org.findUnique({ where: { id: orgId } });
+      if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
+
+      const gen = await this.llm.generateDoc({ ...profile, profession: org!.profession } as any, job, type);
+      let contentJson: unknown;
+      try { contentJson = JSON.parse(gen.text); } catch { throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmUnreadable'); }
+      if (!validateDoc(type, contentJson)) throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
+
+      return await this.prisma.$transaction(async (tx: any) => {
+        const doc = await tx.document.create({
+          data: { jobId: job.id, type, title: `${DOC_TEMPLATES[type].titlePrefix} — ${job.title}`, contentJson, status: 'ready', version: 1 },
+        });
+        await tx.generationLog.create({
+          data: {
+            orgId, jobId: job.id, provider: gen.provider, model: gen.model,
+            promptTokens: gen.promptTokens, completionTokens: gen.completionTokens,
+            costUsd: gen.costUsd, priceMapVersion: gen.priceMapVersion,
+          },
+        });
+        return doc;
+      });
+    } catch (e) {
+      await this.releaseQuota(reservation);
+      throw e;
+    }
+  }
+
   async generateProposal(orgId: string, jobId: string, reservation?: { orgId: string; periodStart: Date }) {
     try {
       const job = await this.jobs.getOwned(orgId, jobId);
@@ -148,12 +190,11 @@ export class DocumentsService {
       const org = await this.prisma.org.findUnique({ where: { id: orgId } });
       if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
 
-      const gen = await this.llm.regenerateSection(
-        { ...profile, profession: org!.profession } as any,
-        job,
-        section,
-        (doc.contentJson ?? {}) as Record<string, unknown>,
-      );
+      const current = (doc.contentJson ?? {}) as Record<string, unknown>;
+      // proposal → dedicated section prompt; sow/estimate → registry field prompt.
+      const gen = isRegistryDocType(doc.type)
+        ? await this.llm.regenerateDocField({ ...profile, profession: org!.profession } as any, job, doc.type, section, current)
+        : await this.llm.regenerateSection({ ...profile, profession: org!.profession } as any, job, section, current);
       await this.prisma.generationLog.create({
         data: {
           orgId, jobId, provider: gen.provider, model: gen.model,
