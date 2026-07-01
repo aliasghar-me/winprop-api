@@ -14,6 +14,7 @@ import { DocumentDto } from './dto/document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { RegenerateSectionDto } from './dto/regenerate-section.dto';
 import { AdjustToneDto } from './dto/adjust-tone.dto';
+import { CreateDocumentDto } from './dto/create-document.dto';
 
 @ApiTags('documents')
 @ApiBearerAuth()
@@ -24,8 +25,8 @@ export class DocumentsController {
 
   @Post() @Roles('owner', 'admin', 'member') @UseGuards(EmailVerifiedGuard, QuotaGuard)
   @ApiCreatedResponse({ type: DocumentDto })
-  generate(@CurrentUser() u: JwtUser, @Param('jobId') jobId: string, @Req() req: Request) {
-    return this.docs.generateProposal(u.orgId, jobId, (req as any).quotaReservation);
+  generate(@CurrentUser() u: JwtUser, @Param('jobId') jobId: string, @Body() dto: CreateDocumentDto, @Req() req: Request) {
+    return this.docs.generate(u.orgId, jobId, dto.type ?? 'proposal', (req as any).quotaReservation);
   }
 
   @Get(':docId')
