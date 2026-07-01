@@ -566,6 +566,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "",
@@ -1722,6 +1732,19 @@
           "plan"
         ]
       },
+      "CreateDocumentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "proposal",
+              "sow",
+              "estimate"
+            ]
+          }
+        }
+      },
       "DocumentDto": {
         "type": "object",
         "properties": {
@@ -1732,10 +1755,12 @@
             "type": "string"
           },
           "type": {
-            "type": "string",
             "enum": [
-              "proposal"
-            ]
+              "proposal",
+              "sow",
+              "estimate"
+            ],
+            "type": "string"
           },
           "title": {
             "type": "string"
@@ -1799,7 +1824,15 @@
               "scope",
               "timeline",
               "pricing",
-              "closing"
+              "closing",
+              "overview",
+              "deliverables",
+              "milestones",
+              "assumptions",
+              "timelineWeeks",
+              "priceUsd",
+              "lineItems",
+              "notes"
             ]
           }
         },
