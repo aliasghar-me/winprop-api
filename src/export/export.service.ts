@@ -3,7 +3,8 @@ import { chromium, type LaunchOptions } from 'playwright';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 import { AppException } from '../common/errors/app-exception';
-import { buildProposalHtml } from './proposal-html';
+import { buildProposalHtml, buildDocHtml } from './proposal-html';
+import { DOC_TEMPLATES, isRegistryDocType } from '../llm/doc-templates';
 
 @Injectable()
 export class ExportService {
@@ -17,7 +18,9 @@ export class ExportService {
     const doc = await this.prisma.document.findFirst({ where: { id: docId, jobId } });
     if (!doc) throw new AppException(404, 'NOT_FOUND', 'errors.documentNotFound');
     const profile = await this.prisma.profile.findUnique({ where: { orgId } });
-    const html = buildProposalHtml(doc, profile);
+    const html = isRegistryDocType(doc.type)
+      ? buildDocHtml(doc, profile, DOC_TEMPLATES[doc.type].fields)
+      : buildProposalHtml(doc, profile);
 
     // In prod the Docker image installs Chromium (bundled). Locally / where a system
     // Chrome exists, set PLAYWRIGHT_CHROMIUM_CHANNEL=chrome to avoid the download.

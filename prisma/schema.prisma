@@ -43,6 +43,8 @@ enum JobStatus {
 
 enum DocType {
   proposal
+  sow
+  estimate
 }
 
 enum DocStatus {

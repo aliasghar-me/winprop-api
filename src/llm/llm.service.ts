@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/crypto/crypto.service';
 import { LlmProvider } from './llm-provider.interface';
 import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, buildToneAdjustPrompt, PROPOSAL_SECTIONS, ProposalSection, ToneName } from './prompt.builder';
+import { buildDocPrompt, buildDocFieldPrompt, RegistryDocType } from './doc-templates';
 import { costUsd, PRICE_MAP_VERSION } from './pricing';
 import { AppException } from '../common/errors/app-exception';
 
@@ -128,6 +129,56 @@ export class LlmService {
       model: cfg.model,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
+      costUsd: costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens),
+      priceMapVersion: PRICE_MAP_VERSION,
+    };
+  }
+
+  // Generate a registry document type (sow/estimate). Returns raw text + usage; the
+  // caller parses + validates against the template (mirrors generateProposal).
+  async generateDoc(profile: Profile & { profession?: string }, job: Job, type: RegistryDocType) {
+    await this.assertPlatformBudget();
+    const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
+    if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
+    const provider = this.resolveProvider(cfg.provider);
+    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
+    const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
+    let result;
+    try {
+      result = await provider.generate(cfg.model, apiKey, buildDocPrompt(profile, job, type));
+    } catch (e: any) {
+      this.logger.error(`LLM generateDoc failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
+    }
+    return {
+      text: result.text, provider: cfg.provider, model: cfg.model,
+      promptTokens: result.promptTokens, completionTokens: result.completionTokens,
+      costUsd: costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens),
+      priceMapVersion: PRICE_MAP_VERSION,
+    };
+  }
+
+  // Regenerate a single field of a registry document type.
+  async regenerateDocField(profile: Profile & { profession?: string }, job: Job, type: RegistryDocType, fieldKey: string, current: Record<string, unknown>) {
+    await this.assertPlatformBudget();
+    const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
+    if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
+    const provider = this.resolveProvider(cfg.provider);
+    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
+    const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
+    let result;
+    try {
+      result = await provider.generate(cfg.model, apiKey, buildDocFieldPrompt(profile, job, type, fieldKey, current));
+    } catch (e: any) {
+      this.logger.error(`LLM regenerateDocField failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
+    }
+    let value: unknown;
+    try { value = JSON.parse(result.text)?.value; } catch { throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmUnreadable'); }
+    if (value === undefined || value === null) throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
+    return {
+      key: fieldKey, value, provider: cfg.provider, model: cfg.model,
+      promptTokens: result.promptTokens, completionTokens: result.completionTokens,
       costUsd: costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens),
       priceMapVersion: PRICE_MAP_VERSION,
     };
