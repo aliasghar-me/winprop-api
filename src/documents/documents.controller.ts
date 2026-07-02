@@ -15,6 +15,7 @@ import { UpdateDocumentDto } from './dto/update-document.dto';
 import { RegenerateSectionDto } from './dto/regenerate-section.dto';
 import { AdjustToneDto } from './dto/adjust-tone.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { DuplicateDocumentDto } from './dto/duplicate-document.dto';
 
 @ApiTags('documents')
 @ApiBearerAuth()
@@ -69,6 +70,13 @@ export class DocumentsController {
     @Req() req: Request,
   ) {
     return this.docs.regenerateSection(u.orgId, jobId, docId, dto.section, (req as any).quotaReservation);
+  }
+
+  // Reuse: clone a document into a fresh v1 (same job, or a target job you own).
+  @Post(':docId/duplicate') @Roles('owner', 'admin', 'member')
+  @ApiCreatedResponse({ type: DocumentDto })
+  duplicate(@CurrentUser() u: JwtUser, @Param('jobId') jobId: string, @Param('docId') docId: string, @Body() dto: DuplicateDocumentDto) {
+    return this.docs.duplicate(u.orgId, jobId, docId, dto.targetJobId);
   }
 
   // Adjust tone — re-runs the prose sections in a new tone, saves a labeled version.
