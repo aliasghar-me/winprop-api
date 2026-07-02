@@ -156,6 +156,24 @@ export class DocumentsService {
     return this.prisma.documentVersion.findMany({ where: { documentId: docId }, orderBy: { version: 'desc' } });
   }
 
+  // Reuse a winning document: clone its content into a fresh v1 (same job, or a
+  // target job the caller also owns). No LLM/quota — it's a copy. History not carried.
+  async duplicate(orgId: string, jobId: string, docId: string, targetJobId?: string) {
+    const src = await this.getOne(orgId, jobId, docId);
+    const destJobId = targetJobId ?? jobId;
+    if (targetJobId && targetJobId !== jobId) await this.jobs.getOwned(orgId, targetJobId); // tenant scope the target
+    return this.prisma.document.create({
+      data: {
+        jobId: destJobId,
+        type: src.type,
+        title: `${src.title} (copy)`,
+        contentJson: src.contentJson as any,
+        status: 'draft',
+        version: 1,
+      },
+    });
+  }
+
   // Create (or return existing) public share link for a document.
   async share(orgId: string, jobId: string, docId: string) {
     const doc = await this.getOne(orgId, jobId, docId);

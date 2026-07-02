@@ -854,6 +854,59 @@
         ]
       }
     },
+    "/jobs/{jobId}/documents/{docId}/duplicate": {
+      "post": {
+        "operationId": "DocumentsController_duplicate",
+        "parameters": [
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
+    },
     "/jobs/{jobId}/documents/{docId}/adjust-tone": {
       "post": {
         "operationId": "DocumentsController_adjustTone",
@@ -1839,6 +1892,15 @@
         "required": [
           "section"
         ]
+      },
+      "DuplicateDocumentDto": {
+        "type": "object",
+        "properties": {
+          "targetJobId": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
       },
       "AdjustToneDto": {
         "type": "object",
