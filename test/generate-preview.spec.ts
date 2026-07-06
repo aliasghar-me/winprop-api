@@ -7,9 +7,16 @@ const okJson = JSON.stringify({
   lockedTitles: ['Scope', 'Timeline', 'Investment', 'Why us', 'Next steps'],
 });
 
-function makeService(provider: LlmProvider, spend = 0) {
+function makeService(provider: LlmProvider, spend = 0, cfg?: { provider: string; model: string }) {
   const prisma: any = {
-    llmConfig: { findFirst: async () => ({ orgId: null, provider: 'mock', model: 'mock', apiKeyEncrypted: 'enc' }) },
+    llmConfig: {
+      findFirst: async () => ({
+        orgId: null,
+        provider: cfg?.provider ?? 'mock',
+        model: cfg?.model ?? 'mock',
+        apiKeyEncrypted: 'enc',
+      }),
+    },
     generationLog: { aggregate: async () => ({ _sum: { costUsd: spend } }) },
   };
   const crypto: any = { decrypt: () => 'key' };
@@ -46,5 +53,23 @@ describe('LlmService.generatePreview', () => {
     process.env.LLM_ANON_DAILY_USD_CAP = '0';
     const svc = makeService(mockProvider(okJson));
     await expect(svc.generatePreview('A site', 'desc')).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' });
+  });
+
+  // Proves real accumulation (not just the degenerate cap=0 case above): 'mock'/'mock'
+  // has no pricing entry (always costs $0), so we point the stored config at a PRICED
+  // vendor/model (openai:gpt-4o) — resolveProvider() still swaps in the injected mock
+  // provider because LLM_MOCK=true, but costUsd() now charges real per-call rates.
+  //
+  // Note: assertAnonBudget() checks accumulated spend from PRIOR calls only, before the
+  // current call runs. So for the 2nd call to be the one that trips, the cap must sit
+  // at-or-below one call's cost (not above it) — the 1st call always starts from a spend
+  // of 0 and succeeds regardless, then its cost is added to the running total.
+  it('accumulates real spend across calls and rejects once the running total hits the cap', async () => {
+    const oneCallCostUsd = 100 / 1000 * 0.005 + 50 / 1000 * 0.015; // gpt-4o rate x mock usage (100 in / 50 out) = 0.00125
+    process.env.LLM_ANON_DAILY_USD_CAP = String(oneCallCostUsd * 0.8); // > 0, but <= one call's cost
+    const svc = makeService(mockProvider(okJson), 0, { provider: 'openai', model: 'gpt-4o' });
+
+    await expect(svc.generatePreview('A site', 'desc')).resolves.toBeDefined(); // 1st call: spend 0 -> under cap, succeeds
+    await expect(svc.generatePreview('A site', 'desc')).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' }); // 2nd call: accumulated spend now over cap
   });
 });

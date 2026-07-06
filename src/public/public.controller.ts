@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { PublicService } from './public.service';
@@ -22,6 +22,7 @@ export class PublicController {
 
   // Anonymous funnel teaser. Tight per-IP limit (2 / 24h) on top of the global limiter.
   @Post('preview')
+  @HttpCode(200)
   @Throttle({ default: { limit: 2, ttl: 86_400_000 } })
   @ApiOkResponse({ type: PreviewResultDto })
   preview(@Body() dto: PreviewRequestDto) {
