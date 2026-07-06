@@ -3,12 +3,22 @@ import { Profile, Job } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/crypto/crypto.service';
 import { LlmProvider } from './llm-provider.interface';
-import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, buildToneAdjustPrompt, PROPOSAL_SECTIONS, ProposalSection, ToneName } from './prompt.builder';
+import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, buildToneAdjustPrompt, buildPreviewPrompt, PROPOSAL_SECTIONS, ProposalSection, ToneName } from './prompt.builder';
 import { buildDocPrompt, buildDocFieldPrompt, RegistryDocType } from './doc-templates';
 import { costUsd, PRICE_MAP_VERSION } from './pricing';
 import { AppException } from '../common/errors/app-exception';
 
 export const LLM_PROVIDERS = 'LLM_PROVIDERS';
+
+// In-process anonymous LLM spend accumulator (single-instance VPS). Not persisted:
+// the anonymous funnel path writes no rows, and the per-IP throttle is the primary
+// abuse limit. On horizontal scale, move this to Redis/DB.
+let anonSpend: { day: string; usd: number } = { day: '', usd: 0 };
+function utcDayKey(): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return d.toISOString();
+}
 
 @Injectable()
 export class LlmService {
@@ -26,6 +36,19 @@ export class LlmService {
     const start = new Date(); start.setUTCHours(0, 0, 0, 0);
     const agg = await this.prisma.generationLog.aggregate({ _sum: { costUsd: true }, where: { createdAt: { gte: start } } });
     if (Number(agg._sum.costUsd ?? 0) >= cap) throw new AppException(429, 'QUOTA_EXCEEDED', 'errors.platformBusy');
+  }
+
+  private assertAnonBudget() {
+    const cap = Number(process.env.LLM_ANON_DAILY_USD_CAP ?? 10);
+    const day = utcDayKey();
+    if (anonSpend.day !== day) anonSpend = { day, usd: 0 };
+    if (anonSpend.usd >= cap) throw new AppException(429, 'QUOTA_EXCEEDED', 'errors.platformBusy');
+  }
+
+  private recordAnonSpend(usd: number) {
+    const day = utcDayKey();
+    if (anonSpend.day !== day) anonSpend = { day, usd: 0 };
+    anonSpend.usd += usd;
   }
 
   // Resolve the provider for a stored config. When LLM_MOCK=true the mock
@@ -224,5 +247,39 @@ export class LlmService {
       costUsd: costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens),
       priceMapVersion: PRICE_MAP_VERSION,
     };
+  }
+
+  // Anonymous landing-funnel teaser. No profile/job, no DB writes. Returns AT MOST
+  // one visible section (enforced here) plus the locked section titles.
+  async generatePreview(title: string, description: string) {
+    await this.assertPlatformBudget();
+    this.assertAnonBudget();
+    const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
+    if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
+    const provider = this.resolveProvider(cfg.provider);
+    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
+    const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
+    const messages = buildPreviewPrompt(title, description);
+    let result;
+    try {
+      result = await provider.generate(cfg.model, apiKey, messages);
+    } catch (e: any) {
+      this.logger.error(`LLM preview failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
+    }
+    this.recordAnonSpend(costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens));
+    let parsed: { sections?: unknown; lockedTitles?: unknown };
+    try {
+      parsed = JSON.parse(result.text);
+    } catch {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmUnreadable');
+    }
+    const sections = (Array.isArray(parsed.sections) ? parsed.sections : [])
+      .filter((s: any) => s && typeof s.heading === 'string' && typeof s.body === 'string')
+      .map((s: any) => ({ heading: s.heading, body: s.body }));
+    if (!sections.length) throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
+    const lockedTitles = (Array.isArray(parsed.lockedTitles) ? parsed.lockedTitles : [])
+      .filter((x: any) => typeof x === 'string').slice(0, 8);
+    return { sections: sections.slice(0, 1), lockedTitles };
   }
 }
