@@ -12,7 +12,7 @@ import { LlmProvider, LlmMessages, LlmResult } from '../llm-provider.interface';
 export class MockProvider implements LlmProvider {
   readonly vendor = 'mock' as const;
 
-  async generate(_model: string, _apiKey: string, messages: LlmMessages): Promise<LlmResult> {
+  async generate(_model: string, _apiKey: string, messages: LlmMessages, _maxTokens?: number): Promise<LlmResult> {
     const job = /job "([^"]+)"/.exec(messages.user)?.[1] ?? /Title: (.+)/.exec(messages.user)?.[1] ?? 'the project';
     const client = /client: ([^)]+)\)/.exec(messages.user)?.[1] ?? 'the client';
 

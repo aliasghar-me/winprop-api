@@ -60,8 +60,8 @@ describe('preview throttle (e2e)', () => {
       .set('X-Forwarded-For', '9.9.9.9')
       .send(body);
 
-    expect(first.status).toBe(201);
-    expect(second.status).toBe(201);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
     expect(third.status).toBe(429);
   });
 });

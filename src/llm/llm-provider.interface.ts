@@ -2,5 +2,5 @@ export interface LlmMessages { system: string; user: string; }
 export interface LlmResult { text: string; promptTokens: number; completionTokens: number; }
 export interface LlmProvider {
   readonly vendor: 'openai' | 'anthropic' | 'mock';
-  generate(model: string, apiKey: string, messages: LlmMessages): Promise<LlmResult>;
+  generate(model: string, apiKey: string, messages: LlmMessages, maxTokens?: number): Promise<LlmResult>;
 }

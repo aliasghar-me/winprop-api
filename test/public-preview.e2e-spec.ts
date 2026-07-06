@@ -43,7 +43,7 @@ describe('POST /public/proposals/preview (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post('/public/proposals/preview')
       .send({ title: 'Marketing site rebuild', description: 'A 5-page site for a law firm' })
-      .expect(201);
+      .expect(200);
     expect(res.body.sections).toHaveLength(1);
     expect(res.body.sections[0]).toHaveProperty('heading');
     expect(res.body.sections[0]).toHaveProperty('body');

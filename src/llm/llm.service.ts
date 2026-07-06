@@ -257,12 +257,12 @@ export class LlmService {
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.resolveProvider(cfg.provider);
-    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
+    if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
     const messages = buildPreviewPrompt(title, description);
     let result;
     try {
-      result = await provider.generate(cfg.model, apiKey, messages);
+      result = await provider.generate(cfg.model, apiKey, messages, 400);
     } catch (e: any) {
       this.logger.error(`LLM preview failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
       throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
@@ -276,10 +276,10 @@ export class LlmService {
     }
     const sections = (Array.isArray(parsed.sections) ? parsed.sections : [])
       .filter((s: any) => s && typeof s.heading === 'string' && typeof s.body === 'string')
-      .map((s: any) => ({ heading: s.heading, body: s.body }));
+      .map((s: any) => ({ heading: s.heading.slice(0, 200), body: s.body.slice(0, 2000) }));
     if (!sections.length) throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
     const lockedTitles = (Array.isArray(parsed.lockedTitles) ? parsed.lockedTitles : [])
-      .filter((x: any) => typeof x === 'string').slice(0, 8);
+      .filter((x: any) => typeof x === 'string').map((x: string) => x.slice(0, 100)).slice(0, 8);
     return { sections: sections.slice(0, 1), lockedTitles };
   }
 }
