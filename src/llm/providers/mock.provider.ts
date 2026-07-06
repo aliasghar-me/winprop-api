@@ -55,6 +55,20 @@ export class MockProvider implements LlmProvider {
       return this.result(JSON.stringify({ value }));
     }
 
+    // Landing-funnel preview path.
+    if (messages.user.includes('sections (array of exactly ONE object')) {
+      const previewTitle = /Project title: (.+)/.exec(messages.user)?.[1] ?? 'your project';
+      const preview = {
+        sections: [{
+          heading: 'Overview',
+          body: `You're setting out to deliver ${previewTitle}, and the priority is a build that's clear, credible, and on-brand from day one. ` +
+                `This engagement is structured around focused milestones and visible progress, so you always know what's shipping next.`,
+        }],
+        lockedTitles: ['Scope of work', 'Timeline', 'Investment', 'Why us', 'Next steps'],
+      };
+      return this.result(JSON.stringify(preview));
+    }
+
     // Full-proposal path.
     const proposal = {
       summary:
