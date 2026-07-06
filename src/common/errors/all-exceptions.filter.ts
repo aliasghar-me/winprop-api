@@ -29,6 +29,7 @@ const EN_FALLBACK: Record<string, string> = {
   'errors.noBillingAccount': 'No billing account yet. Subscribe to a plan first.',
   'errors.platformBusy': 'The service is busy right now. Please try again shortly.',
   'errors.invalidOrigin': 'Request origin not allowed.',
+  'errors.badRequest': 'Invalid request.',
 };
 
 function interpolate(template: string, args?: Record<string, any>): string {
