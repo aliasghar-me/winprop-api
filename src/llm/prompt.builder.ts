@@ -163,3 +163,20 @@ export function buildSectionPrompt(
   ].filter(Boolean).join('\n');
   return { system, user };
 }
+
+// Anonymous landing-funnel preview. No profile/job — grounded ONLY in the
+// visitor's title + description. Instructs brevity so the teaser is cheap.
+export function buildPreviewPrompt(title: string, description: string) {
+  const system = [
+    'You are a senior proposal writer creating a short, compelling PREVIEW of a client proposal.',
+    'Be specific and confident. Do NOT invent client names, budgets, or facts not implied by the brief.',
+  ].join(' ');
+  const user = [
+    `Project title: ${title}`,
+    description ? `Project description: ${description}` : '',
+    'Write ONLY the opening "Overview" section of a proposal for this project — 2 to 4 short, punchy sentences that show you understand the goal and set up the engagement. Keep it under 120 words.',
+    'Then list the headings a full proposal would contain.',
+    'Return JSON with keys: sections (array of exactly ONE object {heading (string), body (string)}), lockedTitles (array of 4-6 short section-heading strings like "Scope", "Timeline", "Investment", "Why us", "Next steps"). Return nothing else.',
+  ].filter(Boolean).join('\n');
+  return { system, user };
+}

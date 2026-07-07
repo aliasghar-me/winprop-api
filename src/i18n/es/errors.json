@@ -28,5 +28,6 @@
   "mfaAlreadyEnabled": "La autenticación de dos factores ya está activada.",
   "mfaNotEnrolled": "Primero inicia el registro de dos factores.",
   "idempotencyConflict": "Ya hay una solicitud en curso con esta clave de idempotencia.",
-  "exportFailed": "No se pudo generar el PDF. Inténtalo de nuevo."
+  "exportFailed": "No se pudo generar el PDF. Inténtalo de nuevo.",
+  "badRequest": "Solicitud no válida."
 }
