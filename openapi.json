@@ -1275,6 +1275,37 @@
         ]
       }
     },
+    "/public/proposals/preview": {
+      "post": {
+        "operationId": "PublicController_preview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
     "/jobs/{jobId}/documents/{docId}/pdf": {
       "get": {
         "operationId": "ExportController_pdf",
@@ -2269,6 +2300,65 @@
           "title",
           "contentJson",
           "updatedAt"
+        ]
+      },
+      "PreviewRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "website": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ]
+      },
+      "PreviewSectionDto": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "heading",
+          "body"
+        ]
+      },
+      "PreviewResultDto": {
+        "type": "object",
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewSectionDto"
+            }
+          },
+          "lockedTitles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "sections",
+          "lockedTitles"
         ]
       },
       "AnalyticsSummaryDto": {

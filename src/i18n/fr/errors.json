@@ -28,5 +28,6 @@
   "mfaAlreadyEnabled": "L’authentification à deux facteurs est déjà activée.",
   "mfaNotEnrolled": "Commencez d’abord l’inscription à deux facteurs.",
   "idempotencyConflict": "Une requête avec cette clé d’idempotence est déjà en cours.",
-  "exportFailed": "Impossible de générer le PDF. Veuillez réessayer."
+  "exportFailed": "Impossible de générer le PDF. Veuillez réessayer.",
+  "badRequest": "Requête invalide."
 }
