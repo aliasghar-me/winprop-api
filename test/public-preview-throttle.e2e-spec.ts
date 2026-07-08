@@ -6,10 +6,12 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CryptoService } from '../src/common/crypto/crypto.service';
 import { AllExceptionsFilter } from '../src/common/errors/all-exceptions.filter';
+import { PREVIEW_THROTTLE } from '../src/public/public.controller';
 
-// Anonymous funnel teaser is @Throttle'd to 2 requests / 24h per IP. Rate limiting
+// Anonymous funnel teaser is @Throttle'd (PREVIEW_THROTTLE) per IP. Rate limiting
 // is globally skipped in the e2e suite (setup-throttle.ts); re-enable it just for
 // this spec to prove the limiter actually fires (mirrors rate-limit.e2e-spec.ts).
+// Driven off PREVIEW_THROTTLE.limit so the test never drifts from the configured value.
 describe('preview throttle (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -43,25 +45,19 @@ describe('preview throttle (e2e)', () => {
     await app?.close();
   });
 
-  it('allows 2 then 429s the 3rd from the same IP', async () => {
+  it(`allows ${PREVIEW_THROTTLE.limit} then 429s the next from the same IP`, async () => {
     const body = { title: 'A project', description: 'A description' };
     const server = app.getHttpServer();
+    const post = () =>
+      request(server).post('/public/proposals/preview').set('X-Forwarded-For', '9.9.9.9').send(body);
 
-    const first = await request(server)
-      .post('/public/proposals/preview')
-      .set('X-Forwarded-For', '9.9.9.9')
-      .send(body);
-    const second = await request(server)
-      .post('/public/proposals/preview')
-      .set('X-Forwarded-For', '9.9.9.9')
-      .send(body);
-    const third = await request(server)
-      .post('/public/proposals/preview')
-      .set('X-Forwarded-For', '9.9.9.9')
-      .send(body);
-
-    expect(first.status).toBe(200);
-    expect(second.status).toBe(200);
-    expect(third.status).toBe(429);
+    // The first PREVIEW_THROTTLE.limit requests are allowed (200)...
+    for (let i = 0; i < PREVIEW_THROTTLE.limit; i++) {
+      const res = await post();
+      expect(res.status).toBe(200);
+    }
+    // ...and the one past the limit is throttled (429).
+    const over = await post();
+    expect(over.status).toBe(429);
   });
 });
