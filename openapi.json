@@ -265,6 +265,35 @@
         ]
       }
     },
+    "/jobs/assess": {
+      "post": {
+        "operationId": "JobsController_assess",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessJobDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Creates a Job from pasted text and returns { job, analysis } with the apply/maybe/avoid recommendation, fit, ROI and red flags."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/jobs/{id}": {
       "get": {
         "operationId": "JobsController_getOne",
@@ -1596,6 +1625,19 @@
           "createdAt"
         ]
       },
+      "AssessJobDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
       "UpdateJobDto": {
         "type": "object",
         "properties": {
@@ -1650,6 +1692,15 @@
               "won",
               "lost"
             ]
+          },
+          "wonAmountUsd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "outcomeReason": {
+            "type": "string",
+            "maxLength": 2000
           }
         }
       },
@@ -2382,10 +2433,31 @@
           "sent": {
             "type": "number"
           },
+          "applications": {
+            "type": "number",
+            "description": "proposals that reached the client (== sent)"
+          },
+          "assessed": {
+            "type": "number",
+            "description": "jobs that have an AI analysis"
+          },
           "winRate": {
             "type": "number",
             "nullable": true,
             "description": "won / (won + lost); null until a deal is decided"
+          },
+          "revenueWonUsd": {
+            "type": "number",
+            "description": "headline KPI: sum of awarded amounts on won deals"
+          },
+          "revenuePerProposalUsd": {
+            "type": "number",
+            "nullable": true,
+            "description": "revenueWon / applications; null with no applications"
+          },
+          "revenueOpportunityLostUsd": {
+            "type": "number",
+            "description": "expected value of assessed-but-not-applied opportunities worth pursuing"
           }
         },
         "required": [
@@ -2394,7 +2466,12 @@
           "won",
           "lost",
           "sent",
-          "winRate"
+          "applications",
+          "assessed",
+          "winRate",
+          "revenueWonUsd",
+          "revenuePerProposalUsd",
+          "revenueOpportunityLostUsd"
         ]
       }
     }
