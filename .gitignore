@@ -5,3 +5,6 @@ dist/
 # local secret backups — never commit
 .env.backup.*
 .env.*.backup
+
+# test coverage output
+coverage/
