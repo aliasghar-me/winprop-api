@@ -8,7 +8,7 @@ import { UpdateJobDto } from './dto/update-job.dto';
 const normalize = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
 
 // Rich client/opportunity fields persisted on create + update.
-const RICH_FIELDS = ['clientName', 'clientEmail', 'clientWebsite', 'projectDescription', 'requirements', 'budget', 'timeline'] as const;
+const RICH_FIELDS = ['clientName', 'clientEmail', 'clientWebsite', 'projectDescription', 'requirements', 'budget', 'timeline', 'wonAmountUsd', 'outcomeReason'] as const;
 
 @Injectable()
 export class JobsService {
@@ -21,36 +21,64 @@ export class JobsService {
   async analyze(orgId: string, jobId: string, reservation?: { orgId: string; periodStart: Date }) {
     try {
       const job = await this.getOwned(orgId, jobId);
-      const profile = await this.prisma.profile.findUnique({ where: { orgId } });
-      const org = await this.prisma.org.findUnique({ where: { id: orgId } });
-      if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
-
-      const gen = await this.llm.analyzeJob({ ...profile, profession: org!.profession } as never, job);
-      let analysis: any;
-      try {
-        analysis = JSON.parse(gen.text);
-      } catch {
-        throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmUnreadable');
-      }
-      if (!analysis || typeof analysis !== 'object' || typeof analysis.objective !== 'string') {
-        throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
-      }
-
-      await this.prisma.$transaction([
-        this.prisma.job.update({ where: { id: job.id }, data: { intelligenceJson: analysis } }),
-        this.prisma.generationLog.create({
-          data: {
-            orgId, jobId: job.id, provider: gen.provider, model: gen.model,
-            promptTokens: gen.promptTokens, completionTokens: gen.completionTokens,
-            costUsd: gen.costUsd, priceMapVersion: gen.priceMapVersion,
-          },
-        }),
-      ]);
-      return analysis;
+      return await this.runAnalysis(orgId, job);
     } catch (e) {
       await this.releaseQuota(reservation);
       throw e;
     }
+  }
+
+  // "Should I Apply?" — paste a job posting, create the Job from it, and analyze
+  // it in one step (returns the apply/don't-apply verdict). Same quota semantics
+  // as analyze: the reservation is released if anything fails.
+  async assess(orgId: string, text: string, reservation?: { orgId: string; periodStart: Date }) {
+    try {
+      const job = await this.prisma.db.job.create({
+        data: { orgId, title: this.deriveTitle(text), projectDescription: text.trim() },
+      });
+      const analysis = await this.runAnalysis(orgId, job);
+      return { job, analysis };
+    } catch (e) {
+      await this.releaseQuota(reservation);
+      throw e;
+    }
+  }
+
+  // Derive a concise Job title from a pasted posting: first non-empty line, capped.
+  private deriveTitle(text: string): string {
+    const first = (text ?? '').split('\n').map((l) => l.trim()).find((l) => l.length > 0) ?? '';
+    const title = first.replace(/\s+/g, ' ').slice(0, 120).trim();
+    return title || 'Untitled opportunity';
+  }
+
+  // Shared analysis core: run the LLM, validate, persist intelligenceJson + log.
+  private async runAnalysis(orgId: string, job: { id: string } & Record<string, any>) {
+    const profile = await this.prisma.profile.findUnique({ where: { orgId } });
+    const org = await this.prisma.org.findUnique({ where: { id: orgId } });
+    if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
+
+    const gen = await this.llm.analyzeJob({ ...profile, profession: org!.profession } as never, job as never);
+    let analysis: any;
+    try {
+      analysis = JSON.parse(gen.text);
+    } catch {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmUnreadable');
+    }
+    if (!analysis || typeof analysis !== 'object' || typeof analysis.objective !== 'string') {
+      throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmIncomplete');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.job.update({ where: { id: job.id }, data: { intelligenceJson: analysis } }),
+      this.prisma.generationLog.create({
+        data: {
+          orgId, jobId: job.id, provider: gen.provider, model: gen.model,
+          promptTokens: gen.promptTokens, completionTokens: gen.completionTokens,
+          costUsd: gen.costUsd, priceMapVersion: gen.priceMapVersion,
+        },
+      }),
+    ]);
+    return analysis;
   }
 
   // Best-effort release of a quota reservation on a failed analysis (mirrors

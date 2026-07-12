@@ -16,4 +16,7 @@ export class UpdateJobDto {
   @IsOptional() @IsInt({ message: m('validation.isInt') }) @Min(0, { message: m('validation.min') }) @Max(1_000_000_000, { message: m('validation.maxLength') }) budget?: number;
   @IsOptional() @IsString({ message: m('validation.isString') }) @MaxLength(120, { message: m('validation.maxLength') }) timeline?: string;
   @IsOptional() @IsEnum(JobStatus, { message: m('validation.isEnum') }) status?: JobStatus;
+  // Outcome recording (Should-I-Apply MVP): set when a deal is won/lost.
+  @IsOptional() @IsInt({ message: m('validation.isInt') }) @Min(0, { message: m('validation.min') }) @Max(1_000_000_000, { message: m('validation.maxLength') }) wonAmountUsd?: number;
+  @IsOptional() @IsString({ message: m('validation.isString') }) @MaxLength(2000, { message: m('validation.maxLength') }) outcomeReason?: string;
 }
