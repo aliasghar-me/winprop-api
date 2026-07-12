@@ -12,6 +12,7 @@ import { TenantGuard } from '../common/tenant/tenant.guard';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { AssessJobDto } from './dto/assess-job.dto';
 import { JobDto } from './dto/job.dto';
 
 @ApiTags('jobs')
@@ -25,6 +26,14 @@ export class JobsController {
   @ApiCreatedResponse({ type: JobDto })
   create(@CurrentUser() u: JwtUser, @Body() dto: CreateJobDto) {
     return this.jobs.create(u.orgId, dto);
+  }
+
+  // "Should I Apply?" — paste a job posting, get a Job + apply/don't-apply verdict
+  // in one call. Quota-gated (one LLM analysis) + email-verified, like intelligence.
+  @Post('assess') @Roles('owner', 'admin', 'member') @UseGuards(EmailVerifiedGuard, QuotaGuard)
+  @ApiCreatedResponse({ description: 'Creates a Job from pasted text and returns { job, analysis } with the apply/maybe/avoid recommendation, fit, ROI and red flags.' })
+  assess(@CurrentUser() u: JwtUser, @Body() dto: AssessJobDto, @Req() req: Request) {
+    return this.jobs.assess(u.orgId, dto.text, (req as any).quotaReservation);
   }
 
   @Get()

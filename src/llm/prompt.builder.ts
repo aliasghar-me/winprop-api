@@ -79,11 +79,11 @@ export function buildProposalPrompt(profile: Profile & { profession?: string }, 
 // studio profile — must not invent client history or facts not present.
 export function buildJobIntelligencePrompt(profile: Profile & { profession?: string }, job: Job) {
   const system = [
-    `You are a senior proposal strategist and solutions architect analyzing an opportunity for ${profile.agencyName}, a ${profile.profession ?? 'professional'} studio.`,
-    `Analyze ONLY from the job text and the studio profile below. Do not fabricate client history, names, or facts not present. Be realistic and concise.`,
+    `You are a senior proposal strategist advising ${profile.agencyName}, a ${profile.profession ?? 'professional'} studio, on ONE decision: "Should we spend the next hour applying to this job?"`,
+    `Analyze ONLY from the job text and the studio profile below. Do not fabricate client history, names, or facts not present. Be realistic, honest, and decisive — it is more valuable to say "avoid" on a low-fit job than to encourage a wasted application.`,
   ].join(' ');
   const user = [
-    `Analyze this opportunity.`,
+    `Analyze this opportunity and give an apply/don't-apply recommendation grounded in OUR profile.`,
     `Title: ${job.title}`,
     job.company && job.company !== '—' ? `Company: ${job.company}` : '',
     job.projectDescription ? `Project: ${job.projectDescription}` : '',
@@ -91,8 +91,8 @@ export function buildJobIntelligencePrompt(profile: Profile & { profession?: str
     job.budget ? `Stated budget (USD): ${job.budget}` : '',
     job.timeline ? `Stated timeline: ${job.timeline}` : '',
     `Our services: ${profile.services.join(', ')}. Our skills: ${profile.skills.join(', ')}. Our price range: $${profile.priceMin}-$${profile.priceMax}.`,
-    `Return JSON with keys: objective (string), domain (string), seniority (string), complexity ("Low"|"Medium"|"High"), estimatedWeeks (number), estimatedBudgetUsd (number), stack (string[]), deliverables (string[]), integrations (string[]), risks (array of {title (string), severity ("low"|"medium"|"high"), note (string)}), clarificationQuestions (array of up to 6 high-value question strings), winProbability (object {score (number 0-100), reasons (string[]), improvements (string[])}).`,
-    `Base winProbability on the honest fit between this job and our skills/price range. Return nothing else.`,
+    `Return JSON with keys: objective (string), domain (string), seniority (string), complexity ("Low"|"Medium"|"High"), estimatedWeeks (number), estimatedBudgetUsd (number), stack (string[]), deliverables (string[]), integrations (string[]), risks (array of {title (string), severity ("low"|"medium"|"high"), note (string)}), clarificationQuestions (array of up to 6 high-value question strings), winProbability (object {score (number 0-100), reasons (string[]), improvements (string[])}), recommendation ("apply"|"maybe"|"avoid"), fit (object {portfolio (number 0-100), skills (number 0-100), budget (number 0-100), competition ("Low"|"Medium"|"High")}), expectedRoiUsdPerHour (number — estimated value of applying: (win chance × project value) / hours to win and deliver), redFlags (array of short strings; include scam signals, vague scope, unrealistic budget, or "none").`,
+    `Ground recommendation and fit in the honest match between this job and OUR skills/portfolio/price range. "apply" only when fit and ROI justify the hour; "avoid" for low fit, red flags, or poor ROI. Return nothing else.`,
   ].filter(Boolean).join('\n');
   return { system, user };
 }
