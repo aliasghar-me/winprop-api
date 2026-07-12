@@ -173,6 +173,10 @@ model Job {
   // clarification questions, win-probability. Generated on demand, grounded in the job text.
   intelligenceJson   Json?
   status             JobStatus  @default(draft)
+  // Outcome recording (Should-I-Apply MVP): set when a deal is won/lost so the
+  // Revenue dashboard can compute Revenue Won + revenue-per-proposal.
+  wonAmountUsd       Int? // whole USD awarded, set on a won deal
+  outcomeReason      String? // free text: why it was won/lost (seeds the learning loop)
   createdAt          DateTime   @default(now())
   documents          Document[]
 }

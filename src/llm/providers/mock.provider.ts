@@ -44,6 +44,10 @@ export class MockProvider implements LlmProvider {
           reasons: ['Strong overlap between the brief and your core skills', 'Budget sits within your typical range'],
           improvements: ['Lead with a directly comparable case study', 'Answer the top clarification question in your opening'],
         },
+        recommendation: 'apply',
+        fit: { portfolio: 78, skills: 84, budget: 80, competition: 'Medium' },
+        expectedRoiUsdPerHour: 240,
+        redFlags: ['none'],
       };
       return this.result(JSON.stringify(analysis));
     }

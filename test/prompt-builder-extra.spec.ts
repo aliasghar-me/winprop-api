@@ -104,7 +104,8 @@ describe('buildJobIntelligencePrompt', () => {
       job({ projectDescription: 'desc', requirements: 'req', budget: 10000, timeline: '3mo' }),
     );
     expect(system).toContain('Studio A');
-    expect(system).toContain('solutions architect');
+    expect(system).toContain('strategist');
+    expect(system).toContain('applying to this job');
     expect(user).toContain('Title: Acme Build');
     expect(user).toContain('Company: Acme');
     expect(user).toContain('Project: desc');
@@ -113,6 +114,10 @@ describe('buildJobIntelligencePrompt', () => {
     expect(user).toContain('Stated timeline: 3mo');
     expect(user).toContain('winProbability');
     expect(user).toContain('clarificationQuestions');
+    // Should-I-Apply decision keys
+    expect(user).toContain('recommendation');
+    expect(user).toContain('expectedRoiUsdPerHour');
+    expect(user).toContain('redFlags');
   });
 
   it('omits the company line when company is the em-dash placeholder', () => {
