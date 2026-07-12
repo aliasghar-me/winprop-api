@@ -1,0 +1,33 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "roots": ["<rootDir>/src", "<rootDir>/test"],
+  "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  },
+  "setupFiles": ["dotenv/config", "<rootDir>/test/setup-throttle.ts"],
+  "maxWorkers": 1,
+  "testEnvironment": "node",
+  "collectCoverage": true,
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!src/main.ts",
+    "!src/**/*.module.ts",
+    "!src/**/dto/**",
+    "!src/**/*.dto.ts",
+    "!src/**/*.interface.ts",
+    "!src/**/*.enum.ts",
+    "!src/**/index.ts",
+    "!src/llm/providers/openai.provider.ts",
+    "!src/llm/providers/anthropic.provider.ts",
+    "!src/common/observability/sentry.ts"
+  ],
+  "coverageDirectory": "./coverage",
+  "coverageThreshold": {
+    "global": { "branches": 90, "functions": 90, "lines": 90, "statements": 90 }
+  }
+}
