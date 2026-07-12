@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+# Local fast gate: unit tests + build must pass before push.
+# The authoritative whole-repo 90% coverage gate (unit + e2e) runs in CI,
+# because e2e needs a Postgres database and would truncate a local dev DB.
+# To run the full gate locally against a throwaway DB:
+#   DATABASE_URL=... pnpm prisma migrate deploy && pnpm test:cov:all
+echo "▶ pre-push gate (winprop-api): unit tests + build"
+pnpm test  || { echo "✖ unit tests failed — push blocked"; exit 1; }
+pnpm build || { echo "✖ build failed — push blocked"; exit 1; }
+echo "✔ pre-push gate passed (full 90% coverage gate enforced in CI)"
