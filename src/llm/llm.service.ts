@@ -3,7 +3,7 @@ import { Profile, Job } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/crypto/crypto.service';
 import { LlmProvider } from './llm-provider.interface';
-import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, buildToneAdjustPrompt, buildPreviewPrompt, PROPOSAL_SECTIONS, ProposalSection, ToneName } from './prompt.builder';
+import { buildProposalPrompt, buildSectionPrompt, buildJobIntelligencePrompt, buildToneAdjustPrompt, buildPreviewPrompt, buildMemoryExtractionPrompt, PROPOSAL_SECTIONS, ProposalSection, ToneName, type MemoryFact } from './prompt.builder';
 import { buildDocPrompt, buildDocFieldPrompt, RegistryDocType } from './doc-templates';
 import { costUsd, PRICE_MAP_VERSION } from './pricing';
 import { AppException } from '../common/errors/app-exception';
@@ -90,14 +90,40 @@ export class LlmService {
   }
 
   // Job-Intelligence analysis: returns the raw JSON text + usage/cost (caller parses + persists).
-  async analyzeJob(profile: Profile & { profession?: string }, job: Job) {
+  // Best-effort fact extraction (memory auto-capture). NEVER throws — returns []
+  // on any config/provider/parse failure so callers can fire-and-forget it.
+  async extractMemories(text: string): Promise<{ category: string; key: string; value: string; confidence: number }[]> {
+    try {
+      const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
+      if (!cfg) return [];
+      const provider = this.resolveProvider(cfg.provider);
+      if (!provider) return [];
+      const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
+      const result = await provider.generate(cfg.model, apiKey, buildMemoryExtractionPrompt(text), 400);
+      const parsed = JSON.parse(result.text) as { facts?: unknown };
+      const facts = Array.isArray(parsed?.facts) ? parsed.facts : [];
+      return facts
+        .filter((f: any) => f && typeof f.key === 'string' && typeof f.value === 'string')
+        .slice(0, 10)
+        .map((f: any) => ({
+          category: typeof f.category === 'string' ? f.category : 'general',
+          key: String(f.key).slice(0, 80),
+          value: String(f.value).slice(0, 500),
+          confidence: Math.max(0, Math.min(1, Number(f.confidence) || 0.7)),
+        }));
+    } catch {
+      return [];
+    }
+  }
+
+  async analyzeJob(profile: Profile & { profession?: string }, job: Job, memories: MemoryFact[] = []) {
     await this.assertPlatformBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.resolveProvider(cfg.provider);
     if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
     const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
-    const messages = buildJobIntelligencePrompt(profile, job);
+    const messages = buildJobIntelligencePrompt(profile, job, memories);
     let result;
     try {
       result = await provider.generate(cfg.model, apiKey, messages);

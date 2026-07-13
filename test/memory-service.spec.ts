@@ -48,6 +48,26 @@ function makeDeps(over: { db?: any; base?: any } = {}) {
   return { svc, prisma, crypto, dbUserMemory, baseUserMemory };
 }
 
+describe('MemoryService.forPrompt', () => {
+  it('returns compact non-sensitive high-confidence facts and stamps lastUsedAt', async () => {
+    const { svc, dbUserMemory, baseUserMemory } = makeDeps({
+      db: { findMany: jest.fn().mockResolvedValue([row({ id: 'a', category: 'technical', key: 'stack', value: 'Next.js' })]) },
+    });
+    const out = await svc.forPrompt('org1');
+    expect(dbUserMemory.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { orgId: 'org1', deletedAt: null, sensitive: false, confidence: { gte: 0.5 } } }),
+    );
+    expect(out).toEqual([{ category: 'technical', key: 'stack', value: 'Next.js' }]);
+    expect(baseUserMemory.updateMany).toHaveBeenCalled();
+  });
+
+  it('returns [] and skips the markUsed write when there are no facts', async () => {
+    const { svc, baseUserMemory } = makeDeps({ db: { findMany: jest.fn().mockResolvedValue([]) } });
+    expect(await svc.forPrompt('org1')).toEqual([]);
+    expect(baseUserMemory.updateMany).not.toHaveBeenCalled();
+  });
+});
+
 describe('MemoryService.list', () => {
   it('lists non-deleted facts ordered by category then key', async () => {
     const { svc, dbUserMemory } = makeDeps();
