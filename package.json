@@ -23,7 +23,7 @@
     "backfill:quota": "nest build && node dist/scripts/backfill-quota.js",
     "backfill:pii": "nest build && node dist/scripts/backfill-pii.js",
     "test:cov:all": "jest --config jest.coverage.json",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
