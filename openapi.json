@@ -400,6 +400,228 @@
         ]
       }
     },
+    "/memory": {
+      "get": {
+        "operationId": "MemoryController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "All non-deleted memory facts for the org, ordered by category then key."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      },
+      "post": {
+        "operationId": "MemoryController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMemoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Create or upsert a memory fact by (category, key)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      },
+      "delete": {
+        "operationId": "MemoryController_removeMany",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Soft-delete all memory facts, or only those in ?category=."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/memory/categories": {
+      "get": {
+        "operationId": "MemoryController_categories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Distinct categories with a count of facts in each."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/memory/export": {
+      "get": {
+        "operationId": "MemoryController_export",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Portable dump of the org memory (sensitive values decrypted)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/memory/audit": {
+      "get": {
+        "operationId": "MemoryController_audit",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Recent memory audit-trail entries (newest first)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/memory/import": {
+      "post": {
+        "operationId": "MemoryController_import",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportMemoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk-import memory facts (inverse of export). Returns the imported count."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/memory/{id}": {
+      "patch": {
+        "operationId": "MemoryController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMemoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Update a memory fact."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      },
+      "delete": {
+        "operationId": "MemoryController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Soft-delete a single memory fact."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
     "/admin/login": {
       "post": {
         "operationId": "AdminController_login",
@@ -1396,180 +1618,6 @@
           "analytics"
         ]
       }
-    },
-    "/memory": {
-      "get": {
-        "operationId": "MemoryController_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "All non-deleted memory facts for the org, ordered by category then key."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "memory"
-        ]
-      },
-      "post": {
-        "operationId": "MemoryController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMemoryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Create or upsert a memory fact by (category, key)."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "memory"
-        ]
-      },
-      "delete": {
-        "operationId": "MemoryController_removeMany",
-        "parameters": [
-          {
-            "name": "category",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Soft-delete all memory facts, or only those in ?category=."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "memory"
-        ]
-      }
-    },
-    "/memory/categories": {
-      "get": {
-        "operationId": "MemoryController_categories",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Distinct categories with a count of facts in each."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "memory"
-        ]
-      }
-    },
-    "/memory/export": {
-      "get": {
-        "operationId": "MemoryController_export",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Portable dump of the org memory (sensitive values decrypted)."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "memory"
-        ]
-      }
-    },
-    "/memory/{id}": {
-      "patch": {
-        "operationId": "MemoryController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMemoryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Update a memory fact."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "memory"
-        ]
-      },
-      "delete": {
-        "operationId": "MemoryController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Soft-delete a single memory fact."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "memory"
-        ]
-      }
     }
   },
   "info": {
@@ -1875,6 +1923,122 @@
           "outcomeReason": {
             "type": "string",
             "maxLength": 2000
+          }
+        }
+      },
+      "ImportedFact": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "isPermanent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category",
+          "key",
+          "value"
+        ]
+      },
+      "ImportMemoryDto": {
+        "type": "object",
+        "properties": {
+          "facts": {
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportedFact"
+            }
+          }
+        },
+        "required": [
+          "facts"
+        ]
+      },
+      "CreateMemoryDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "category",
+          "key",
+          "value"
+        ]
+      },
+      "UpdateMemoryDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
           }
         }
       },
@@ -2647,67 +2811,6 @@
           "revenuePerProposalUsd",
           "revenueOpportunityLostUsd"
         ]
-      },
-      "CreateMemoryDto": {
-        "type": "object",
-        "properties": {
-          "category": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "key": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
-          "value": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 5000
-          },
-          "sensitive": {
-            "type": "boolean"
-          },
-          "confidence": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          }
-        },
-        "required": [
-          "category",
-          "key",
-          "value"
-        ]
-      },
-      "UpdateMemoryDto": {
-        "type": "object",
-        "properties": {
-          "category": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "key": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
-          "value": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 5000
-          },
-          "sensitive": {
-            "type": "boolean"
-          },
-          "confidence": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          }
-        }
       }
     }
   }
