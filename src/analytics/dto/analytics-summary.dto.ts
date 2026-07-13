@@ -8,6 +8,8 @@ export class AnalyticsSummaryDto {
   @ApiProperty() sent: number;
   @ApiProperty({ description: 'proposals that reached the client (== sent)' }) applications: number;
   @ApiProperty({ description: 'jobs that have an AI analysis' }) assessed: number;
+  @ApiProperty({ description: 'assessed jobs that produced a proposal (funnel: assessed → applied → won)' }) applied: number;
+  @ApiProperty({ description: '"avoid"-recommended jobs the user did NOT apply to (time saved)' }) avoidHeeded: number;
   @ApiProperty({ nullable: true, description: 'won / (won + lost); null until a deal is decided' })
   winRate: number | null;
   @ApiProperty({ description: 'headline KPI: sum of awarded amounts on won deals' }) revenueWonUsd: number;

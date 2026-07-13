@@ -2441,6 +2441,14 @@
             "type": "number",
             "description": "jobs that have an AI analysis"
           },
+          "applied": {
+            "type": "number",
+            "description": "assessed jobs that produced a proposal (funnel: assessed → applied → won)"
+          },
+          "avoidHeeded": {
+            "type": "number",
+            "description": "\"avoid\"-recommended jobs the user did NOT apply to (time saved)"
+          },
           "winRate": {
             "type": "number",
             "nullable": true,
@@ -2468,6 +2476,8 @@
           "sent",
           "applications",
           "assessed",
+          "applied",
+          "avoidHeeded",
           "winRate",
           "revenueWonUsd",
           "revenuePerProposalUsd",
