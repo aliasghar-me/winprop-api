@@ -14,6 +14,29 @@ concurrency:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
+  # Gate: is the VPS configured yet? Secrets can't be read in job-level `if:`,
+  # so surface VPS_HOST as an output the deploy jobs can branch on. Until the
+  # VPS_HOST secret is set, the deploy jobs skip cleanly (skipped ≠ failed), so
+  # `main` stays green; they auto-activate the moment the secret exists.
+  # ─────────────────────────────────────────────────────────────────────────────
+  gate:
+    name: Deploy gate
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - id: check
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          if [ -n "$VPS_HOST" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false — VPS_HOST not set; skipping SSH deploy" >> "$GITHUB_STEP_SUMMARY"
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Build & push the Docker image to GHCR
   # ─────────────────────────────────────────────────────────────────────────────
   build-and-push:
@@ -68,8 +91,8 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   deploy-staging:
     name: Deploy → staging
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main'
+    needs: [gate, build-and-push]
+    if: needs.gate.outputs.deploy == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -104,8 +127,8 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   deploy-production:
     name: Deploy → production
-    needs: build-and-push
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [gate, build-and-push]
+    if: needs.gate.outputs.deploy == 'true' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment:
       name: production
