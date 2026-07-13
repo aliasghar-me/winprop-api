@@ -10,7 +10,7 @@ export class AnalyticsService {
   async summary(orgId: string) {
     const jobs = await this.prisma.job.findMany({
       where: { orgId },
-      select: { status: true, wonAmountUsd: true, intelligenceJson: true },
+      select: { status: true, wonAmountUsd: true, intelligenceJson: true, _count: { select: { documents: true } } },
     });
 
     const byStatus: Record<string, number> = {};
@@ -24,6 +24,15 @@ export class AnalyticsService {
     // "Sent" / applications = anything that reached the client (sent → won/lost).
     const sent = n('sent') + n('viewed') + n('negotiation') + won + lost;
     const assessed = jobs.filter((j) => j.intelligenceJson != null).length;
+
+    // Behavior funnel: assessed → applied (a proposal was generated) → won.
+    const applied = jobs.filter((j) => (j._count?.documents ?? 0) > 0).length;
+    // "Avoid heeded" = jobs we flagged "avoid" that the user correctly did NOT
+    // apply to (no proposal generated). This is the time-saved / don't-waste-the-hour signal.
+    const avoidHeeded = jobs.filter((j) => {
+      const a = j.intelligenceJson as any;
+      return a?.recommendation === 'avoid' && (j._count?.documents ?? 0) === 0;
+    }).length;
 
     // Revenue Won = sum of awarded amounts on won deals (headline KPI).
     const revenueWonUsd = jobs.reduce((s, j) => (j.status === 'won' ? s + (j.wonAmountUsd ?? 0) : s), 0);
@@ -49,6 +58,8 @@ export class AnalyticsService {
       sent,
       applications: sent,
       assessed,
+      applied,
+      avoidHeeded,
       // null until at least one deal is decided — never present a fake 0% / 100%.
       winRate: decided > 0 ? Math.round((won / decided) * 100) / 100 : null,
       revenueWonUsd,
