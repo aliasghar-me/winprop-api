@@ -18,6 +18,8 @@ const TENANT_KEY: Record<string, string> = {
   Subscription: 'orgId',
   GenerationLog: 'orgId',
   QuotaPeriod: 'orgId',
+  UserMemory: 'orgId',
+  MemoryAuditLog: 'orgId',
 };
 
 // Operations whose `where` accepts arbitrary filters → safe to AND-inject the

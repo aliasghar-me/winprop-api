@@ -23,6 +23,7 @@ import { BillingModule } from './billing/billing.module.js';
 import { UsersModule } from './users/users.module.js';
 import { ExportModule } from './export/export.module.js';
 import { AnalyticsModule } from './analytics/analytics.module.js';
+import { MemoryModule } from './memory/memory.module.js';
 import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolver.js';
 
 @Module({
@@ -67,6 +68,7 @@ import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolve
     PublicModule,
     ExportModule,
     AnalyticsModule,
+    MemoryModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LlmService } from '../llm/llm.service';
+import { MemoryService } from '../memory/memory.service';
 import { AppException } from '../common/errors/app-exception';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -12,7 +13,7 @@ const RICH_FIELDS = ['clientName', 'clientEmail', 'clientWebsite', 'projectDescr
 
 @Injectable()
 export class JobsService {
-  constructor(private prisma: PrismaService, private llm: LlmService) {}
+  constructor(private prisma: PrismaService, private llm: LlmService, private memory: MemoryService) {}
 
   // Generate the AI Job-Intelligence analysis, persist it on the job, log cost.
   // `reservation` is the quota slot QuotaGuard reserved up-front (H2); if anything
@@ -57,7 +58,10 @@ export class JobsService {
     const org = await this.prisma.org.findUnique({ where: { id: orgId } });
     if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
 
-    const gen = await this.llm.analyzeJob({ ...profile, profession: org!.profession } as never, job as never);
+    // Personalize the verdict with what we already know about the freelancer
+    // (never re-ask). Best-effort — memory must never block the assessment.
+    const memories = await this.memory.forPrompt(orgId).catch(() => []);
+    const gen = await this.llm.analyzeJob({ ...profile, profession: org!.profession } as never, job as never, memories);
     let analysis: any;
     try {
       analysis = JSON.parse(gen.text);
@@ -127,7 +131,24 @@ export class JobsService {
     if (dto.title !== undefined) data.title = dto.title.trim();
     if (dto.company !== undefined) data.company = dto.company;
     if (dto.status !== undefined) data.status = dto.status;
-    return this.prisma.job.update({ where: { id: jobId }, data });
+    const updated = await this.prisma.job.update({ where: { id: jobId }, data });
+    // Learning loop: when a deal is decided with a reason, capture durable facts
+    // about the freelancer for future proposals. Best-effort — never fails the update.
+    if ((dto.status === 'won' || dto.status === 'lost') && dto.outcomeReason) {
+      await this.captureFromOutcome(orgId, dto.outcomeReason);
+    }
+    return updated;
+  }
+
+  // Extract durable freelancer facts from a won/lost reason and store them (memory
+  // auto-capture). Wrapped so a failure never breaks outcome recording.
+  private async captureFromOutcome(orgId: string, reason: string) {
+    try {
+      const facts = await this.llm.extractMemories(reason);
+      for (const f of facts) await this.memory.recordFact(orgId, { ...f, source: 'outcome' });
+    } catch {
+      /* best-effort — memory capture must never fail the update */
+    }
   }
 
   private pickRich(dto: CreateJobDto | UpdateJobDto) {

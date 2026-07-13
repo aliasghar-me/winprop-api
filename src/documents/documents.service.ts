@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LlmService } from '../llm/llm.service';
 import { JobsService } from '../jobs/jobs.service';
+import { MemoryService } from '../memory/memory.service';
 import { AppException } from '../common/errors/app-exception';
 import type { ToneName } from '../llm/prompt.builder';
 import { DOC_TEMPLATES, validateDoc, isRegistryDocType, type RegistryDocType } from '../llm/doc-templates';
@@ -12,7 +13,7 @@ const shareBaseUrl = () =>
 
 @Injectable()
 export class DocumentsService {
-  constructor(private prisma: PrismaService, private llm: LlmService, private jobs: JobsService) {}
+  constructor(private prisma: PrismaService, private llm: LlmService, private jobs: JobsService, private memory: MemoryService) {}
 
   // `reservation` is the quota slot QuotaGuard reserved up-front (H2). If anything
   // below fails, we release it so a failed generation never consumes quota — the
@@ -66,8 +67,11 @@ export class DocumentsService {
       const org = await this.prisma.org.findUnique({ where: { id: orgId } });
       if (!profile) throw new AppException(404, 'NOT_FOUND', 'errors.profileNotFound');
 
+      // Personalize with what we already know about the freelancer (never re-ask).
+      // Best-effort — memory must never block generation.
+      const memories = await this.memory.forPrompt(orgId).catch(() => []);
       // LLM call OUTSIDE the tx (network).
-      const gen = await this.llm.generateProposal({ ...profile, profession: org!.profession } as any, job);
+      const gen = await this.llm.generateProposal({ ...profile, profession: org!.profession } as any, job, memories);
       let contentJson: any;
       try {
         contentJson = JSON.parse(gen.text);

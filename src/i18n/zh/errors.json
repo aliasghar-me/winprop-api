@@ -16,6 +16,7 @@
   "profileNotFound": "未找到个人资料。",
   "documentNotFound": "文档未找到。",
   "jobNotFound": "职位未找到。",
+  "memoryNotFound": "记忆项未找到。",
   "duplicateName": "您已有名为\"{name}\"的职位。名称必须唯一。",
   "invalidWebhookSignature": "无效的 webhook 签名。",
   "noBillingAccount": "尚无计费账户。请先订阅套餐。",

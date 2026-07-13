@@ -120,6 +120,26 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 // generateProposal
 // ---------------------------------------------------------------------------
+describe('LlmService.extractMemories', () => {
+  it('parses durable facts from provider JSON', async () => {
+    const svc = makeService(okProvider('{"facts":[{"category":"technical","key":"stack","value":"Next.js","confidence":0.9}]}'));
+    expect(await svc.extractMemories('I build with Next.js')).toEqual([{ category: 'technical', key: 'stack', value: 'Next.js', confidence: 0.9 }]);
+  });
+  it('returns [] on non-JSON output', async () => {
+    expect(await makeService(okProvider('not json')).extractMemories('x')).toEqual([]);
+  });
+  it('returns [] when there is no LLM config', async () => {
+    expect(await makeService(okProvider('{"facts":[]}'), { cfg: null }).extractMemories('x')).toEqual([]);
+  });
+  it('defaults category, clamps confidence, and drops facts missing key/value', async () => {
+    const svc = makeService(okProvider('{"facts":[{"key":"k","value":"v"},{"value":"no key"},{"key":"c","value":"x","category":"business","confidence":5}]}'));
+    expect(await svc.extractMemories('x')).toEqual([
+      { category: 'general', key: 'k', value: 'v', confidence: 0.7 },
+      { category: 'business', key: 'c', value: 'x', confidence: 1 },
+    ]);
+  });
+});
+
 describe('LlmService.generateProposal', () => {
   it('happy path: decrypts key, calls provider, returns text + metadata + cost', async () => {
     const svc = makeService(okProvider('{"summary":"x"}'));
