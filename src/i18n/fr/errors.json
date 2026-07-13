@@ -16,6 +16,7 @@
   "profileNotFound": "Profil introuvable.",
   "documentNotFound": "Document introuvable.",
   "jobNotFound": "Mission introuvable.",
+  "memoryNotFound": "Élément de mémoire introuvable.",
   "duplicateName": "Vous avez déjà une mission nommée \"{name}\". Les noms doivent être uniques.",
   "invalidWebhookSignature": "Signature webhook invalide.",
   "noBillingAccount": "Aucun compte de facturation pour l'instant. Abonnez-vous d'abord à un forfait.",

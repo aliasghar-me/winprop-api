@@ -16,6 +16,7 @@
   "profileNotFound": "Profile not found.",
   "documentNotFound": "Document not found.",
   "jobNotFound": "Job not found.",
+  "memoryNotFound": "Memory item not found.",
   "duplicateName": "You already have a job named \"{name}\". Names must be unique.",
   "invalidWebhookSignature": "Invalid webhook signature.",
   "noBillingAccount": "No billing account yet. Subscribe to a plan first.",
