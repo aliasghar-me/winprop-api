@@ -1557,6 +1557,68 @@
         ]
       }
     },
+    "/public/assess": {
+      "post": {
+        "operationId": "PublicTrialController_assess",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAssessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicAssessResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/proposal": {
+      "post": {
+        "operationId": "PublicTrialController_proposal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAssessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProposalResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
     "/jobs/{jobId}/documents/{docId}/pdf": {
       "get": {
         "operationId": "ExportController_pdf",
@@ -2748,6 +2810,115 @@
         "required": [
           "sections",
           "lockedTitles"
+        ]
+      },
+      "FingerprintSignalDto": {
+        "type": "object",
+        "properties": {
+          "visitorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "userAgent": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "platform": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "canvas": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "visitorId"
+        ]
+      },
+      "PublicAssessDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "fingerprint": {
+            "$ref": "#/components/schemas/FingerprintSignalDto"
+          },
+          "website": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "fingerprint"
+        ]
+      },
+      "TrialRemainingDto": {
+        "type": "object",
+        "properties": {
+          "verdicts": {
+            "type": "number",
+            "description": "Free \"Should I Apply?\" verdicts left before the signup wall."
+          },
+          "proposals": {
+            "type": "number",
+            "description": "Free generated proposals left before the signup wall."
+          }
+        },
+        "required": [
+          "verdicts",
+          "proposals"
+        ]
+      },
+      "PublicAssessResultDto": {
+        "type": "object",
+        "properties": {
+          "analysis": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "remaining": {
+            "$ref": "#/components/schemas/TrialRemainingDto"
+          }
+        },
+        "required": [
+          "analysis",
+          "remaining"
+        ]
+      },
+      "PublicProposalResultDto": {
+        "type": "object",
+        "properties": {
+          "proposal": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "remaining": {
+            "$ref": "#/components/schemas/TrialRemainingDto"
+          }
+        },
+        "required": [
+          "proposal",
+          "remaining"
         ]
       },
       "AnalyticsSummaryDto": {
