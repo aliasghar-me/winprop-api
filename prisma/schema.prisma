@@ -351,6 +351,29 @@ model ProcessedEvent {
   createdAt DateTime @default(now())
 }
 
+// Anonymous free-trial usage (pre-auth). Lets a non-authenticated visitor get the
+// "Should I Apply?" verdict + one proposal without signing up, while tracking usage
+// server-side to deter abuse. NOT tenant-scoped — there is no org/user yet, so it is
+// deliberately absent from TENANT_KEY. PRIVACY: stores HASHES ONLY (never raw
+// IP / user-agent / fingerprint); `country` is coarse (header-derived) and optional.
+model TrialUsage {
+  id              String   @id @default(cuid())
+  deviceId        String   @unique              // sha256(fingerprint + ua + tz + lang + platform)
+  fingerprintHash String
+  ipHash          String
+  uaHash          String
+  country         String?
+  verdictCount    Int      @default(0)
+  proposalCount   Int      @default(0)
+  tokenUsed       Int      @default(0)
+  trialUsed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([ipHash])
+  @@index([fingerprintHash])
+}
+
 enum WebhookStatus {
   pending
   processing
