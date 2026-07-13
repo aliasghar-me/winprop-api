@@ -23,7 +23,7 @@ describe('Memory CRUD (e2e)', () => {
     prisma = app.get(PrismaService);
 
     await prisma.$executeRawUnsafe(
-      'TRUNCATE "UserMemory","QuotaPeriod","GenerationLog","Document","Profile","Membership","Job","Subscription","Org","User" RESTART IDENTITY CASCADE',
+      'TRUNCATE "MemoryAuditLog","UserMemory","QuotaPeriod","GenerationLog","Document","Profile","Membership","Job","Subscription","Org","User" RESTART IDENTITY CASCADE',
     );
     const su = await request(app.getHttpServer())
       .post('/auth/signup')
@@ -128,6 +128,39 @@ describe('Memory CRUD (e2e)', () => {
       }),
     );
     expect(exp.body[0]).not.toHaveProperty('id');
+  });
+
+  it('imports facts in bulk and they show up in the list', async () => {
+    const imp = await request(app.getHttpServer())
+      .post('/memory/import')
+      .set(auth())
+      .send({
+        facts: [
+          { category: 'technical', key: 'stack', value: 'Next.js + NestJS' },
+          { category: 'business', key: 'niche', value: 'fintech', confidence: 0.8, source: 'explicit' },
+        ],
+      });
+    expect(imp.status).toBe(201);
+    expect(imp.body).toEqual({ imported: 2 });
+
+    const list = await request(app.getHttpServer()).get('/memory').set(auth());
+    const stack = list.body.find((r: any) => r.category === 'technical' && r.key === 'stack');
+    expect(stack.value).toBe('Next.js + NestJS');
+    const niche = list.body.find((r: any) => r.category === 'business' && r.key === 'niche');
+    expect(niche.source).toBe('explicit');
+  });
+
+  it('returns the audit trail with entries after creates/imports/deletes', async () => {
+    const audit = await request(app.getHttpServer()).get('/memory/audit').set(auth());
+    expect(audit.status).toBe(200);
+    expect(Array.isArray(audit.body)).toBe(true);
+    expect(audit.body.length).toBeGreaterThan(0);
+    const actions = audit.body.map((e: any) => e.action);
+    expect(actions).toContain('imported');
+    expect(actions).toContain('created');
+    // newest-first ordering
+    const times = audit.body.map((e: any) => new Date(e.createdAt).getTime());
+    expect(times).toEqual([...times].sort((a, b) => b - a));
   });
 
   it('rejects an invalid body with 400', async () => {

@@ -62,14 +62,14 @@ export class LlmService {
     return this.providers.find((p) => p.vendor === vendor);
   }
 
-  async generateProposal(profile: Profile & { profession?: string }, job: Job) {
+  async generateProposal(profile: Profile & { profession?: string }, job: Job, memories: MemoryFact[] = []) {
     await this.assertPlatformBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.resolveProvider(cfg.provider);
     if (!provider) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmProviderUnavailable', { provider: cfg.provider });
     const apiKey = this.crypto.decrypt(cfg.apiKeyEncrypted);
-    const messages = buildProposalPrompt(profile, job);
+    const messages = buildProposalPrompt(profile, job, memories);
     let result;
     try {
       result = await provider.generate(cfg.model, apiKey, messages);

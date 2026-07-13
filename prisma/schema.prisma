@@ -122,6 +122,7 @@ model Org {
   subscription     Subscription?
   generationLogs   GenerationLog[]
   userMemories     UserMemory[]
+  memoryAuditLogs  MemoryAuditLog[]
 }
 
 model Membership {
@@ -326,6 +327,23 @@ model UserMemory {
   metadata    Json?
 
   @@unique([orgId, category, key])
+}
+
+// Complete audit trail of memory changes (V1). Best-effort append-only log written
+// alongside create/update/delete/import. PRIVACY: `detail` NEVER stores a decrypted
+// sensitive value — sensitive facts record only { sensitive: true }.
+model MemoryAuditLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Org      @relation(fields: [orgId], references: [id])
+  memoryId  String?
+  action    String
+  category  String?
+  key       String?
+  detail    Json?
+  createdAt DateTime @default(now())
+
+  @@index([orgId, createdAt])
 }
 
 model ProcessedEvent {

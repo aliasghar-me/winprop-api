@@ -186,4 +186,12 @@ describe('buildProposalPrompt (budget/timeline lines)', () => {
     expect(user).toContain('Stated budget (USD): 25000');
     expect(user).toContain('Stated timeline: 2 months');
   });
+
+  it('injects memory facts when provided and omits the block otherwise', () => {
+    const withMem = buildProposalPrompt(profile(), job(), [{ category: 'technical', key: 'stack', value: 'Next.js' }]);
+    expect(withMem.user).toContain('already know');
+    expect(withMem.user).toContain('technical/stack: Next.js');
+    const noMem = buildProposalPrompt(profile(), job());
+    expect(noMem.user).not.toContain('already know');
+  });
 });
