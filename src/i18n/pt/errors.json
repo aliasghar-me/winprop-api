@@ -16,6 +16,7 @@
   "profileNotFound": "Perfil não encontrado.",
   "documentNotFound": "Documento não encontrado.",
   "jobNotFound": "Vaga não encontrada.",
+  "memoryNotFound": "Item de memória não encontrado.",
   "duplicateName": "Você já tem uma vaga chamada \"{name}\". Os nomes devem ser únicos.",
   "invalidWebhookSignature": "Assinatura de webhook inválida.",
   "noBillingAccount": "Ainda não há conta de cobrança. Assine um plano primeiro.",
