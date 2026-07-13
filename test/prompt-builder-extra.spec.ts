@@ -1,13 +1,38 @@
 import {
   analysisContext,
   proofContext,
+  memoryContext,
   buildJobIntelligencePrompt,
+  buildMemoryExtractionPrompt,
   buildToneAdjustPrompt,
   buildSectionPrompt,
   buildProposalPrompt,
   PROPOSAL_SECTIONS,
   TONES,
 } from '../src/llm/prompt.builder';
+
+describe('memoryContext', () => {
+  it('returns empty for no facts and renders known facts otherwise', () => {
+    expect(memoryContext([])).toBe('');
+    expect(memoryContext(undefined)).toBe('');
+    const out = memoryContext([
+      { category: 'technical', key: 'framework', value: 'Next.js' },
+      { category: '', key: 'rate', value: '$80/hr' },
+    ]);
+    expect(out).toContain('already know');
+    expect(out).toContain('technical/framework: Next.js');
+    expect(out).toContain('rate: $80/hr');
+  });
+});
+
+describe('buildMemoryExtractionPrompt', () => {
+  it('asks for durable freelancer facts as JSON', () => {
+    const { system, user } = buildMemoryExtractionPrompt('won because I emphasized fintech');
+    expect(system).toMatch(/durable/i);
+    expect(user).toContain('won because I emphasized fintech');
+    expect(user).toContain('facts');
+  });
+});
 
 const profile = (over: Record<string, unknown> = {}) =>
   ({

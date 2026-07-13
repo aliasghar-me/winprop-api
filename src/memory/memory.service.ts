@@ -172,6 +172,22 @@ export class MemoryService {
     });
   }
 
+  // High-confidence, NON-sensitive facts for injecting into generation prompts.
+  // Sensitive values are never sent to the LLM. Stamps lastUsedAt on what we use.
+  async forPrompt(orgId: string, limit = 25): Promise<{ category: string; key: string; value: string }[]> {
+    const rows = (await this.prisma.db.userMemory.findMany({
+      where: { orgId, deletedAt: null, sensitive: false, confidence: { gte: 0.5 } },
+      orderBy: { confidence: 'desc' },
+      take: limit,
+    })) as MemoryRow[];
+    if (rows.length) {
+      await this.prisma.userMemory
+        .updateMany({ where: { orgId, id: { in: rows.map((r) => r.id) } }, data: { lastUsedAt: new Date() } })
+        .catch(() => undefined);
+    }
+    return rows.map((r) => ({ category: r.category, key: r.key, value: r.value }));
+  }
+
   // Fetch a non-deleted fact in this org or throw 404.
   private async getOwned(orgId: string, id: string): Promise<MemoryRow> {
     const row = (await this.prisma.db.userMemory.findFirst({
