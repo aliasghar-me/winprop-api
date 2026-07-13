@@ -7,15 +7,15 @@ function makeSvc(jobs: any[]) {
 }
 
 describe('AnalyticsService.summary — revenue metrics', () => {
-  it('computes revenue won, per-proposal, opportunity-lost, win-rate, applications, assessed', async () => {
+  it('computes revenue, funnel (assessed → applied → won), and avoid-heeded', async () => {
     const svc = makeSvc([
-      { status: 'won', wonAmountUsd: 5000, intelligenceJson: null },
-      { status: 'won', wonAmountUsd: 3000, intelligenceJson: null },
-      { status: 'lost', wonAmountUsd: null, intelligenceJson: null },
-      { status: 'sent', wonAmountUsd: null, intelligenceJson: {} },
-      { status: 'draft', wonAmountUsd: null, intelligenceJson: { recommendation: 'apply', estimatedBudgetUsd: 10000, winProbability: { score: 50 } } }, // 5000 expected
-      { status: 'draft', wonAmountUsd: null, intelligenceJson: { recommendation: 'avoid', estimatedBudgetUsd: 8000, winProbability: { score: 80 } } }, // excluded (avoid)
-      { status: 'draft', wonAmountUsd: null, intelligenceJson: null }, // excluded (not assessed)
+      { status: 'won', wonAmountUsd: 5000, intelligenceJson: null, _count: { documents: 1 } },
+      { status: 'won', wonAmountUsd: 3000, intelligenceJson: null, _count: { documents: 2 } },
+      { status: 'lost', wonAmountUsd: null, intelligenceJson: null, _count: { documents: 1 } },
+      { status: 'sent', wonAmountUsd: null, intelligenceJson: {}, _count: { documents: 1 } },
+      { status: 'draft', wonAmountUsd: null, intelligenceJson: { recommendation: 'apply', estimatedBudgetUsd: 10000, winProbability: { score: 50 } }, _count: { documents: 0 } }, // 5000 expected
+      { status: 'draft', wonAmountUsd: null, intelligenceJson: { recommendation: 'avoid', estimatedBudgetUsd: 8000, winProbability: { score: 80 } }, _count: { documents: 0 } }, // avoid heeded
+      { status: 'draft', wonAmountUsd: null, intelligenceJson: null, _count: { documents: 0 } }, // not assessed
     ]);
     const s = await svc.summary('org1');
     expect(s.total).toBe(7);
@@ -24,10 +24,21 @@ describe('AnalyticsService.summary — revenue metrics', () => {
     expect(s.sent).toBe(4); // sent(1) + won(2) + lost(1)
     expect(s.applications).toBe(4);
     expect(s.assessed).toBe(3); // three jobs have a non-null intelligenceJson
+    expect(s.applied).toBe(4); // four jobs have >=1 document
+    expect(s.avoidHeeded).toBe(1); // the avoid draft with no proposal
     expect(s.winRate).toBe(0.67); // 2/3 rounded to 2dp
     expect(s.revenueWonUsd).toBe(8000);
     expect(s.revenuePerProposalUsd).toBe(2000); // 8000 / 4
     expect(s.revenueOpportunityLostUsd).toBe(5000); // only the apply/maybe draft
+  });
+
+  it('does NOT count an avoid job as heeded if a proposal was generated anyway', async () => {
+    const svc = makeSvc([
+      { status: 'draft', wonAmountUsd: null, intelligenceJson: { recommendation: 'avoid' }, _count: { documents: 1 } },
+    ]);
+    const s = await svc.summary('org1');
+    expect(s.avoidHeeded).toBe(0);
+    expect(s.applied).toBe(1);
   });
 
   it('returns null win-rate and null per-proposal when nothing is decided/applied', async () => {
