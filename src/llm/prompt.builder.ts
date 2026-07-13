@@ -66,7 +66,7 @@ export function proofContext(profile: Profile): string {
   return parts.length ? `Use these real proof points where relevant (never invent others):\n${parts.join('\n')}` : '';
 }
 
-export function buildProposalPrompt(profile: Profile & { profession?: string }, job: Job) {
+export function buildProposalPrompt(profile: Profile & { profession?: string }, job: Job, memories: MemoryFact[] = []) {
   const system = [
     `You are a senior proposal writer for ${profile.agencyName}, a ${profile.profession ?? 'professional'} studio.`,
     `Write in a ${profile.tone} tone. Be specific, confident, and client-focused.`,
@@ -81,6 +81,7 @@ export function buildProposalPrompt(profile: Profile & { profession?: string }, 
     `Our services: ${profile.services.join(', ')}. Our skills: ${profile.skills.join(', ')}.`,
     analysisContext(job),
     proofContext(profile),
+    memoryContext(memories),
     `Return JSON with keys: summary (string), scope (string[]), timelineWeeks (number), priceUsd (number), closing (string).`,
   ].filter(Boolean).join('\n');
   return { system, user };

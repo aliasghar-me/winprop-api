@@ -9,6 +9,7 @@ import { TenantGuard } from '../common/tenant/tenant.guard';
 import { MemoryService } from './memory.service';
 import { CreateMemoryDto } from './dto/create-memory.dto';
 import { UpdateMemoryDto } from './dto/update-memory.dto';
+import { ImportMemoryDto } from './dto/import-memory.dto';
 
 @ApiTags('memory')
 @ApiBearerAuth()
@@ -33,6 +34,18 @@ export class MemoryController {
   @ApiOkResponse({ description: 'Portable dump of the org memory (sensitive values decrypted).' })
   export(@CurrentUser() u: JwtUser) {
     return this.memory.export(u.orgId);
+  }
+
+  @Get('audit')
+  @ApiOkResponse({ description: 'Recent memory audit-trail entries (newest first).' })
+  audit(@CurrentUser() u: JwtUser) {
+    return this.memory.audit(u.orgId);
+  }
+
+  @Post('import') @Roles('owner', 'admin', 'member')
+  @ApiOkResponse({ description: 'Bulk-import memory facts (inverse of export). Returns the imported count.' })
+  import(@CurrentUser() u: JwtUser, @Body() dto: ImportMemoryDto) {
+    return this.memory.import(u.orgId, dto.facts);
   }
 
   @Post() @Roles('owner', 'admin', 'member')

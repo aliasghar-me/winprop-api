@@ -4,6 +4,7 @@ import { CryptoService } from '../common/crypto/crypto.service';
 import { AppException } from '../common/errors/app-exception';
 import { CreateMemoryDto } from './dto/create-memory.dto';
 import { UpdateMemoryDto } from './dto/update-memory.dto';
+import { ImportedFact } from './dto/import-memory.dto';
 
 type MemoryRow = {
   id: string;
@@ -72,6 +73,13 @@ export class MemoryService {
       update: { value, sensitive, confidence, source: 'manual', deletedAt: null },
       create: { orgId, category: dto.category, key: dto.key, value, sensitive, confidence, source: 'manual' },
     })) as MemoryRow;
+    await this.writeAudit(orgId, 'created', {
+      memoryId: row.id,
+      category: row.category,
+      key: row.key,
+      // PRIVACY: never log a decrypted sensitive value.
+      detail: sensitive ? { sensitive: true } : { value: dto.value.slice(0, 200) },
+    });
     return this.decryptRow(row);
   }
 
@@ -87,22 +95,34 @@ export class MemoryService {
     if (dto.confidence !== undefined) data.confidence = dto.confidence;
     if (dto.value !== undefined) data.value = this.encodeValue(dto.value, sensitive);
     const row = (await this.prisma.userMemory.update({ where: { id }, data })) as MemoryRow;
+    // PRIVACY: for a sensitive fact (or one turned sensitive here) record only a flag,
+    // never the decrypted value; otherwise log which fields changed.
+    const sensitiveAfter = sensitive || existing.sensitive;
+    await this.writeAudit(orgId, 'updated', {
+      memoryId: row.id,
+      category: row.category,
+      key: row.key,
+      detail: sensitiveAfter ? { sensitive: true } : { changed: Object.keys(data) },
+    });
     return this.decryptRow(row);
   }
 
   // Soft-delete a single fact (org-scoped).
   async remove(orgId: string, id: string): Promise<{ id: string; deletedAt: Date | null }> {
-    await this.getOwned(orgId, id);
+    const existing = await this.getOwned(orgId, id);
     const row = await this.prisma.userMemory.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.writeAudit(orgId, 'deleted', { memoryId: row.id, category: existing.category, key: existing.key });
     return { id: row.id, deletedAt: row.deletedAt };
   }
 
   // Soft-delete every non-deleted fact in the org, or only those in `category`.
   async removeMany(orgId: string, category?: string): Promise<{ count: number }> {
-    return this.prisma.userMemory.updateMany({
+    const res = await this.prisma.userMemory.updateMany({
       where: { orgId, deletedAt: null, ...(category ? { category } : {}) },
       data: { deletedAt: new Date() },
     });
+    await this.writeAudit(orgId, 'deleted_many', { category, detail: { count: res.count, ...(category ? { category } : {}) } });
+    return res;
   }
 
   // Portable dump of the org's non-deleted facts (values decrypted).
@@ -186,6 +206,57 @@ export class MemoryService {
         .catch(() => undefined);
     }
     return rows.map((r) => ({ category: r.category, key: r.key, value: r.value }));
+  }
+
+  // Bulk-load facts (inverse of export). Each fact is upserted via recordFact so the
+  // same confidence/override rules apply; missing source/confidence default sensibly.
+  async import(orgId: string, facts: ImportedFact[]): Promise<{ imported: number }> {
+    for (const f of facts) {
+      await this.recordFact(orgId, {
+        category: f.category,
+        key: f.key,
+        value: f.value,
+        confidence: f.confidence ?? 0.9,
+        source: f.source ?? 'import',
+        sensitive: f.sensitive,
+        isPermanent: f.isPermanent,
+      });
+    }
+    await this.writeAudit(orgId, 'imported', { detail: { imported: facts.length } });
+    return { imported: facts.length };
+  }
+
+  // Recent audit-trail entries for the org, newest first.
+  async audit(orgId: string, limit = 100) {
+    return this.prisma.db.memoryAuditLog.findMany({
+      where: { orgId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  // Best-effort append to the audit trail. Auditing must NEVER fail the operation, so
+  // any error is swallowed. PRIVACY: callers must never pass a decrypted sensitive value
+  // in `detail` (they pass { sensitive: true } instead).
+  private async writeAudit(
+    orgId: string,
+    action: string,
+    info: { memoryId?: string; category?: string; key?: string; detail?: unknown } = {},
+  ): Promise<void> {
+    try {
+      await this.prisma.db.memoryAuditLog.create({
+        data: {
+          orgId,
+          action,
+          memoryId: info.memoryId ?? null,
+          category: info.category ?? null,
+          key: info.key ?? null,
+          detail: (info.detail ?? undefined) as any,
+        },
+      });
+    } catch {
+      /* best-effort — auditing must never fail the underlying memory operation */
+    }
   }
 
   // Fetch a non-deleted fact in this org or throw 404.

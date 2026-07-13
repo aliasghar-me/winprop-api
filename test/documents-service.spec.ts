@@ -31,6 +31,7 @@ function makeDeps(overrides: {
   prisma?: any;
   llm?: any;
   jobs?: any;
+  memory?: any;
 } = {}) {
   const txObj = {
     document: { create: jest.fn().mockResolvedValue({ id: 'doc-new' }), update: jest.fn().mockResolvedValue({ id: 'doc1', updated: true }) },
@@ -64,8 +65,12 @@ function makeDeps(overrides: {
     getOwned: jest.fn().mockResolvedValue(JOB),
     ...overrides.jobs,
   };
-  const svc = new DocumentsService(prisma, llm, jobs);
-  return { svc, prisma, llm, jobs, txObj };
+  const memory: any = {
+    forPrompt: jest.fn().mockResolvedValue([]),
+    ...overrides.memory,
+  };
+  const svc = new DocumentsService(prisma, llm, jobs, memory);
+  return { svc, prisma, llm, jobs, memory, txObj };
 }
 
 const RES = { orgId: 'org1', periodStart: new Date('2026-01-01') };
@@ -79,6 +84,21 @@ describe('DocumentsService.generate dispatch', () => {
     expect(prisma.__tx.document.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ type: 'proposal', status: 'ready', version: 1 }) }),
     );
+    expect(doc).toEqual({ id: 'doc-new' });
+  });
+
+  it('loads org memory and passes it to generateProposal', async () => {
+    const facts = [{ category: 'technical', key: 'stack', value: 'Next.js' }];
+    const { svc, llm, memory } = makeDeps({ memory: { forPrompt: jest.fn().mockResolvedValue(facts) } });
+    await svc.generateProposal('org1', 'job1', RES);
+    expect(memory.forPrompt).toHaveBeenCalledWith('org1');
+    expect(llm.generateProposal).toHaveBeenCalledWith(expect.anything(), JOB, facts);
+  });
+
+  it('still generates when memory lookup fails (best-effort)', async () => {
+    const { svc, llm } = makeDeps({ memory: { forPrompt: jest.fn().mockRejectedValue(new Error('mem down')) } });
+    const doc = await svc.generateProposal('org1', 'job1', RES);
+    expect(llm.generateProposal).toHaveBeenCalledWith(expect.anything(), JOB, []);
     expect(doc).toEqual({ id: 'doc-new' });
   });
 

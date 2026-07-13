@@ -42,10 +42,15 @@ function makeDeps(over: { db?: any; base?: any } = {}) {
     updateMany: jest.fn().mockResolvedValue({ count: 3 }),
     ...(over.base ?? {}),
   };
-  const prisma: any = { db: { userMemory: dbUserMemory }, userMemory: baseUserMemory };
+  const memoryAuditLog = {
+    create: jest.fn().mockResolvedValue({ id: 'a1' }),
+    findMany: jest.fn().mockResolvedValue([{ id: 'a1', action: 'created' }]),
+    ...((over as any).audit ?? {}),
+  };
+  const prisma: any = { db: { userMemory: dbUserMemory, memoryAuditLog }, userMemory: baseUserMemory };
   const crypto: any = fakeCrypto();
   const svc = new MemoryService(prisma, crypto);
-  return { svc, prisma, crypto, dbUserMemory, baseUserMemory };
+  return { svc, prisma, crypto, dbUserMemory, baseUserMemory, memoryAuditLog };
 }
 
 describe('MemoryService.forPrompt', () => {
@@ -265,5 +270,103 @@ describe('MemoryService.markUsed', () => {
     const out = await svc.markUsed('org1', []);
     expect(baseUserMemory.updateMany).not.toHaveBeenCalled();
     expect(out).toEqual({ count: 0 });
+  });
+});
+
+describe('MemoryService.import', () => {
+  it('records each fact via recordFact and returns the count', async () => {
+    const { svc, dbUserMemory } = makeDeps({ db: { findFirst: jest.fn().mockResolvedValue(null) } });
+    const out = await svc.import('org1', [
+      { category: 'technical', key: 'stack', value: 'Next.js' },
+      { category: 'tone', key: 'style', value: 'friendly' },
+    ] as any);
+    expect(out).toEqual({ imported: 2 });
+    expect(dbUserMemory.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  it('defaults source to "import" and confidence to 0.9 when absent', async () => {
+    const { svc, dbUserMemory } = makeDeps({ db: { findFirst: jest.fn().mockResolvedValue(null) } });
+    await svc.import('org1', [{ category: 'technical', key: 'stack', value: 'Next.js' }] as any);
+    expect(dbUserMemory.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: expect.objectContaining({ source: 'import', confidence: 0.9 }) }),
+    );
+  });
+
+  it('honors an explicit source/confidence from the imported fact', async () => {
+    const { svc, dbUserMemory } = makeDeps({ db: { findFirst: jest.fn().mockResolvedValue(null) } });
+    await svc.import('org1', [{ category: 'technical', key: 'stack', value: 'Next.js', source: 'explicit', confidence: 0.4 }] as any);
+    expect(dbUserMemory.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: expect.objectContaining({ source: 'explicit', confidence: 0.4 }) }),
+    );
+  });
+
+  it('writes an "imported" audit entry', async () => {
+    const { svc, memoryAuditLog } = makeDeps({ db: { findFirst: jest.fn().mockResolvedValue(null) } });
+    await svc.import('org1', [{ category: 'technical', key: 'stack', value: 'Next.js' }] as any);
+    expect(memoryAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ orgId: 'org1', action: 'imported', detail: { imported: 1 } }) }),
+    );
+  });
+});
+
+describe('MemoryService audit trail', () => {
+  it('writes a "created" audit entry with a short value for a non-sensitive fact', async () => {
+    const { svc, memoryAuditLog } = makeDeps();
+    await svc.create('org1', { category: 'tone', key: 'style', value: 'friendly' } as any);
+    expect(memoryAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ action: 'created', category: 'tone', key: 'style', detail: { value: 'friendly' } }) }),
+    );
+  });
+
+  it('NEVER writes a decrypted sensitive value into the audit detail on create', async () => {
+    const { svc, memoryAuditLog } = makeDeps();
+    await svc.create('org1', { category: 'rates', key: 'hourly', value: '250', sensitive: true } as any);
+    const call = memoryAuditLog.create.mock.calls[0][0];
+    expect(call.data.detail).toEqual({ sensitive: true });
+    expect(JSON.stringify(call.data)).not.toContain('250');
+  });
+
+  it('writes an "updated" audit entry and hides the value for a sensitive fact', async () => {
+    const { svc, memoryAuditLog } = makeDeps({ db: { findFirst: jest.fn().mockResolvedValue(row({ sensitive: true })) } });
+    await svc.update('org1', 'm1', { value: 'secret-new' } as any);
+    const call = memoryAuditLog.create.mock.calls[0][0];
+    expect(call.data.action).toBe('updated');
+    expect(call.data.detail).toEqual({ sensitive: true });
+    expect(JSON.stringify(call.data)).not.toContain('secret-new');
+  });
+
+  it('writes a "deleted" audit entry on remove', async () => {
+    const { svc, memoryAuditLog } = makeDeps();
+    await svc.remove('org1', 'm1');
+    expect(memoryAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ action: 'deleted', memoryId: 'm1' }) }),
+    );
+  });
+
+  it('writes a "deleted_many" audit entry on removeMany', async () => {
+    const { svc, memoryAuditLog } = makeDeps();
+    await svc.removeMany('org1', 'tone');
+    expect(memoryAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ action: 'deleted_many', category: 'tone', detail: { count: 3, category: 'tone' } }) }),
+    );
+  });
+
+  it('never lets an audit-write failure break the operation', async () => {
+    const { svc } = makeDeps({ audit: { create: jest.fn().mockRejectedValue(new Error('audit down')) } } as any);
+    const out = await svc.create('org1', { category: 'tone', key: 'style', value: 'friendly' } as any);
+    expect(out.value).toBe('friendly'); // operation still succeeds
+  });
+});
+
+describe('MemoryService.audit', () => {
+  it('returns recent audit entries newest-first', async () => {
+    const { svc, memoryAuditLog } = makeDeps();
+    const out = await svc.audit('org1');
+    expect(memoryAuditLog.findMany).toHaveBeenCalledWith({
+      where: { orgId: 'org1' },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    expect(out).toEqual([{ id: 'a1', action: 'created' }]);
   });
 });
