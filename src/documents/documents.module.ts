@@ -5,6 +5,7 @@ import { QuotaGuard } from './quota.guard';
 import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { LlmModule } from '../llm/llm.module';
 import { JobsModule } from '../jobs/jobs.module';
+import { MemoryModule } from '../memory/memory.module';
 
-@Module({ imports: [LlmModule, JobsModule], providers: [DocumentsService, QuotaGuard, EmailVerifiedGuard], controllers: [DocumentsController] })
+@Module({ imports: [LlmModule, JobsModule, MemoryModule], providers: [DocumentsService, QuotaGuard, EmailVerifiedGuard], controllers: [DocumentsController] })
 export class DocumentsModule {}

@@ -121,6 +121,8 @@ model Org {
   jobs             Job[]
   subscription     Subscription?
   generationLogs   GenerationLog[]
+  userMemories     UserMemory[]
+  memoryAuditLogs  MemoryAuditLog[]
 }
 
 model Membership {
@@ -301,6 +303,47 @@ model QuotaPeriod {
   used        Int      @default(0)
 
   @@unique([orgId, periodStart])
+}
+
+// Persistent per-freelancer memory (V1). Small, org-scoped key/value facts the
+// AI reuses across proposals (preferred tone, boilerplate, rates, do/don'ts).
+// `value` is plaintext, OR AES-256-GCM ciphertext when `sensitive=true`. Rows are
+// soft-deleted (deletedAt) so a purge is reversible and never breaks the unique key.
+model UserMemory {
+  id          String    @id @default(cuid())
+  orgId       String
+  org         Org       @relation(fields: [orgId], references: [id])
+  category    String
+  key         String
+  value       String            // plaintext, OR ciphertext when sensitive=true
+  confidence  Float     @default(1)
+  source      String    @default("manual")   // manual | explicit | conversation | outcome | profile
+  isPermanent Boolean   @default(true)
+  sensitive   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastUsedAt  DateTime?
+  deletedAt   DateTime?
+  metadata    Json?
+
+  @@unique([orgId, category, key])
+}
+
+// Complete audit trail of memory changes (V1). Best-effort append-only log written
+// alongside create/update/delete/import. PRIVACY: `detail` NEVER stores a decrypted
+// sensitive value — sensitive facts record only { sensitive: true }.
+model MemoryAuditLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Org      @relation(fields: [orgId], references: [id])
+  memoryId  String?
+  action    String
+  category  String?
+  key       String?
+  detail    Json?
+  createdAt DateTime @default(now())
+
+  @@index([orgId, createdAt])
 }
 
 model ProcessedEvent {

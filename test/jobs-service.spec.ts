@@ -38,10 +38,12 @@ function makeDeps(overrides: { prisma?: any; llm?: any } = {}) {
   if (!overrides.prisma?.db) prisma.db = { job: dbJob };
   const llm: any = {
     analyzeJob: jest.fn().mockResolvedValue({ ...GEN, text: JSON.stringify({ objective: 'win the deal' }) }),
+    extractMemories: jest.fn().mockResolvedValue([]),
     ...overrides.llm,
   };
-  const svc = new JobsService(prisma, llm);
-  return { svc, prisma, llm, dbJob };
+  const memory: any = { forPrompt: jest.fn().mockResolvedValue([]), recordFact: jest.fn().mockResolvedValue({}), markUsed: jest.fn().mockResolvedValue({ count: 0 }) };
+  const svc = new JobsService(prisma, llm, memory);
+  return { svc, prisma, llm, dbJob, memory };
 }
 
 const RES = { orgId: 'org1', periodStart: new Date('2026-01-01') };

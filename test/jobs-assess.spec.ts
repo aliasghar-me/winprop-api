@@ -22,9 +22,10 @@ function makeDeps(over: { llmText?: string; llmReject?: boolean; created?: any }
     $transaction: jest.fn((arg: any) => (typeof arg === 'function' ? arg(prisma) : Promise.all(arg))),
   };
   const llm: any = over.llmReject
-    ? { analyzeJob: jest.fn().mockRejectedValue(new Error('boom')) }
-    : { analyzeJob: jest.fn().mockResolvedValue({ ...GEN, text: over.llmText ?? JSON.stringify(ANALYSIS) }) };
-  return { svc: new JobsService(prisma, llm), prisma, llm, dbJob };
+    ? { analyzeJob: jest.fn().mockRejectedValue(new Error('boom')), extractMemories: jest.fn().mockResolvedValue([]) }
+    : { analyzeJob: jest.fn().mockResolvedValue({ ...GEN, text: over.llmText ?? JSON.stringify(ANALYSIS) }), extractMemories: jest.fn().mockResolvedValue([{ category: 'freelancing', key: 'wins_with', value: 'fixed price', confidence: 0.8 }]) };
+  const memory: any = { forPrompt: jest.fn().mockResolvedValue([]), recordFact: jest.fn().mockResolvedValue({}), markUsed: jest.fn().mockResolvedValue({ count: 0 }) };
+  return { svc: new JobsService(prisma, llm, memory), prisma, llm, dbJob, memory };
 }
 
 const RES = { orgId: 'org1', periodStart: new Date('2026-01-01') };
@@ -78,5 +79,19 @@ describe('JobsService.update — outcome recording', () => {
     expect(data.status).toBe('won');
     expect(data.wonAmountUsd).toBe(5000);
     expect(data.outcomeReason).toBe('short proposal, fixed price');
+  });
+
+  it('auto-captures durable facts from a won/lost outcome reason (learning loop)', async () => {
+    const { svc, llm, memory } = makeDeps();
+    await svc.update('org1', 'job1', { status: 'won', wonAmountUsd: 5000, outcomeReason: 'won because I highlighted my fintech experience' } as any);
+    expect(llm.extractMemories).toHaveBeenCalledWith('won because I highlighted my fintech experience');
+    expect(memory.recordFact).toHaveBeenCalledWith('org1', expect.objectContaining({ key: 'wins_with', source: 'outcome' }));
+  });
+
+  it('does NOT auto-capture on a non-outcome update or when no reason is given', async () => {
+    const { svc, llm } = makeDeps();
+    await svc.update('org1', 'job1', { status: 'sent' } as any);
+    await svc.update('org1', 'job1', { status: 'won' } as any); // no reason
+    expect(llm.extractMemories).not.toHaveBeenCalled();
   });
 });
