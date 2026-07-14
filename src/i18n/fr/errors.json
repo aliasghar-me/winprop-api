@@ -30,5 +30,7 @@
   "mfaNotEnrolled": "Commencez d’abord l’inscription à deux facteurs.",
   "idempotencyConflict": "Une requête avec cette clé d’idempotence est déjà en cours.",
   "exportFailed": "Impossible de générer le PDF. Veuillez réessayer.",
-  "badRequest": "Requête invalide."
+  "badRequest": "Requête invalide.",
+  "billingNotConfigured": "Free trials are temporarily unavailable. Please try again shortly.",
+  "trialSessionInvalid": "This trial checkout could not be verified. Please try again."
 }

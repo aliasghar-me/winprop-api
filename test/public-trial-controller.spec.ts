@@ -25,6 +25,8 @@ function makeRes() {
   };
 }
 const req: any = { headers: {}, ip: '1.2.3.4' };
+// Stub for the card-first trial-checkout dependency (3rd ctor arg).
+const tc: any = { createCheckoutSession: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe/x' }) };
 const dto = (over: any = {}) => ({
   title: 'Marketing site',
   description: 'A 5-page site',
@@ -33,13 +35,23 @@ const dto = (over: any = {}) => ({
 });
 
 describe('PublicTrialController', () => {
+  it('trial-checkout: delegates to the trial-checkout service and returns the session url', async () => {
+    const trial: any = { evaluate: jest.fn(), record: jest.fn() };
+    const llm: any = {};
+    const svc: any = { createCheckoutSession: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe/session' }) };
+    const ctrl = new PublicTrialController(trial, llm, svc);
+    const out = await ctrl.startTrialCheckout();
+    expect(svc.createCheckoutSession).toHaveBeenCalled();
+    expect(out).toEqual({ url: 'https://checkout.stripe/session' });
+  });
+
   it('assess: allowed → returns analysis + remaining (200) and records usage', async () => {
     const trial: any = {
       evaluate: jest.fn().mockResolvedValue({ allowed: true, remaining: { verdicts: 2, proposals: 1 } }),
       record: jest.fn().mockResolvedValue(undefined),
     };
     const llm: any = { analyzeJob: jest.fn().mockResolvedValue({ text: analysisJson, promptTokens: 100, completionTokens: 50 }) };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     const res = makeRes();
 
     const out: any = await ctrl.assess(dto() as any, req, res as any);
@@ -56,7 +68,7 @@ describe('PublicTrialController', () => {
       record: jest.fn(),
     };
     const llm: any = { analyzeJob: jest.fn() };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     const res = makeRes();
 
     const out: any = await ctrl.assess(dto() as any, req, res as any);
@@ -69,7 +81,7 @@ describe('PublicTrialController', () => {
   it('assess: filled honeypot → rejected (400) before evaluate/LLM', async () => {
     const trial: any = { evaluate: jest.fn(), record: jest.fn() };
     const llm: any = { analyzeJob: jest.fn() };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     const res = makeRes();
     await expect(ctrl.assess(dto({ website: 'http://spam' }) as any, req, res as any)).rejects.toBeInstanceOf(AppException);
     expect(trial.evaluate).not.toHaveBeenCalled();
@@ -82,7 +94,7 @@ describe('PublicTrialController', () => {
       record: jest.fn().mockResolvedValue(undefined),
     };
     const llm: any = { generateProposal: jest.fn().mockResolvedValue({ text: proposalJson, promptTokens: 200, completionTokens: 100 }) };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     const res = makeRes();
 
     const out: any = await ctrl.proposal(dto() as any, req, res as any);
@@ -97,7 +109,7 @@ describe('PublicTrialController', () => {
   it('assess: unreadable LLM output → throws (llmUnreadable)', async () => {
     const trial: any = { evaluate: jest.fn().mockResolvedValue({ allowed: true, remaining: { verdicts: 2, proposals: 1 } }), record: jest.fn() };
     const llm: any = { analyzeJob: jest.fn().mockResolvedValue({ text: 'not json', promptTokens: 1, completionTokens: 1 }) };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     await expect(ctrl.assess(dto() as any, req, makeRes() as any)).rejects.toBeInstanceOf(AppException);
     expect(trial.record).not.toHaveBeenCalled();
   });
@@ -105,16 +117,16 @@ describe('PublicTrialController', () => {
   it('assess: incomplete LLM output (no objective) → throws (llmIncomplete)', async () => {
     const trial: any = { evaluate: jest.fn().mockResolvedValue({ allowed: true, remaining: { verdicts: 2, proposals: 1 } }), record: jest.fn() };
     const llm: any = { analyzeJob: jest.fn().mockResolvedValue({ text: JSON.stringify({ recommendation: 'apply' }), promptTokens: 1, completionTokens: 1 }) };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     await expect(ctrl.assess(dto() as any, req, makeRes() as any)).rejects.toBeInstanceOf(AppException);
   });
 
   it('proposal: unreadable / incomplete LLM output → throws', async () => {
     const trial: any = { evaluate: jest.fn().mockResolvedValue({ allowed: true, remaining: { verdicts: 2, proposals: 0 } }), record: jest.fn() };
     const unreadable: any = { generateProposal: jest.fn().mockResolvedValue({ text: '<<<', promptTokens: 1, completionTokens: 1 }) };
-    await expect(new PublicTrialController(trial, unreadable).proposal(dto() as any, req, makeRes() as any)).rejects.toBeInstanceOf(AppException);
+    await expect(new PublicTrialController(trial, unreadable, tc).proposal(dto() as any, req, makeRes() as any)).rejects.toBeInstanceOf(AppException);
     const incomplete: any = { generateProposal: jest.fn().mockResolvedValue({ text: JSON.stringify({ scope: [] }), promptTokens: 1, completionTokens: 1 }) };
-    await expect(new PublicTrialController(trial, incomplete).proposal(dto() as any, req, makeRes() as any)).rejects.toBeInstanceOf(AppException);
+    await expect(new PublicTrialController(trial, incomplete, tc).proposal(dto() as any, req, makeRes() as any)).rejects.toBeInstanceOf(AppException);
   });
 
   it('assess: falls back to the UA header and reads country headers when fingerprint fields are absent', async () => {
@@ -123,7 +135,7 @@ describe('PublicTrialController', () => {
       record: jest.fn().mockResolvedValue(undefined),
     };
     const llm: any = { analyzeJob: jest.fn().mockResolvedValue({ text: analysisJson, promptTokens: 1, completionTokens: 1 }) };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     const bareReq: any = { headers: { 'user-agent': 'HeaderUA', 'x-vercel-ip-country': 'US' }, ip: '4.4.4.4' };
     await ctrl.assess(dto({ fingerprint: { visitorId: 'only-id' } }) as any, bareReq, makeRes() as any);
     const sigArg = trial.record.mock.calls[0][0];
@@ -136,7 +148,7 @@ describe('PublicTrialController', () => {
       record: jest.fn(),
     };
     const llm: any = { generateProposal: jest.fn() };
-    const ctrl = new PublicTrialController(trial, llm);
+    const ctrl = new PublicTrialController(trial, llm, tc);
     const res = makeRes();
 
     const out: any = await ctrl.proposal(dto() as any, req, res as any);

@@ -7,6 +7,7 @@ import { CryptoService } from '../common/crypto/crypto.service';
 import { SignupDto } from './dto/signup.dto';
 import { AppException } from '../common/errors/app-exception';
 import { EmailVerificationService } from './email-verification.service';
+import type { Profession } from '@prisma/client';
 
 const REFRESH_TTL_MS = 7 * 24 * 3600 * 1000;
 const BCRYPT_COST = 12;
@@ -38,21 +39,60 @@ export class AuthService {
   async signup(dto: SignupDto) {
     const existing = await this.prisma.user.findUnique({ where: { emailHash: this.crypto.hmac(dto.email) } });
     if (existing) throw new AppException(400, 'VALIDATION', 'errors.emailInUse');
-    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
-    const defs = PROFESSION_DEFAULTS[dto.profession];
 
-    const { user, org, membership } = await this.prisma.$transaction(async (tx: any) => {
-      // email + name are stored encrypted; emailHash is the deterministic blind index.
-      const user = await tx.user.create({ data: { email: this.crypto.encrypt(dto.email), emailHash: this.crypto.hmac(dto.email), passwordHash, name: this.crypto.encrypt(dto.name) } });
-      const org = await tx.org.create({ data: { name: dto.agencyName, profession: dto.profession } });
-      const membership = await tx.membership.create({ data: { userId: user.id, orgId: org.id, role: 'owner' } });
-      await tx.profile.create({ data: { orgId: org.id, agencyName: dto.agencyName, services: defs.services, skills: defs.skills } });
-      return { user, org, membership };
+    const { user, org, membership } = await this.provisionAccount({
+      email: dto.email,
+      password: dto.password,
+      name: dto.name,
+      agencyName: dto.agencyName,
+      profession: dto.profession,
     });
     // Send the verification email (auto-login still applies; generation is gated
     // until verified). Non-fatal so a mail hiccup never blocks signup.
     await this.emailVerification.issueForUser(user.id, dto.email).catch(() => undefined);
     return this.issueTokens(user.id, org.id, membership.role);
+  }
+
+  // Reusable "create a brand-new tenant" primitive: User + owner Org + Membership
+  // (+ default Profile). Shared by signup (real password up-front) and the card-first
+  // trial (no password yet — auto-provisioned, passwordSetAt stays null so onboarding
+  // can prompt for one). Does NOT check for a duplicate email or issue tokens — the
+  // caller owns those decisions. email + name are stored encrypted; emailHash is the
+  // deterministic blind index used for lookups.
+  async provisionAccount(input: { email: string; password?: string; name?: string; agencyName?: string; profession?: Profession }) {
+    const profession: Profession = input.profession ?? 'developer';
+    const agencyName = input.agencyName ?? '';
+    const name = input.name ?? '';
+    // A real password sets passwordSetAt now; a trial account gets a random,
+    // effectively-unusable password (they set the real one during onboarding).
+    const hasPassword = typeof input.password === 'string' && input.password.length > 0;
+    const rawPassword = hasPassword ? (input.password as string) : randomUUID() + randomUUID();
+    const passwordHash = await bcrypt.hash(rawPassword, BCRYPT_COST);
+    const defs = PROFESSION_DEFAULTS[profession] ?? PROFESSION_DEFAULTS.developer;
+
+    return this.prisma.$transaction(async (tx: any) => {
+      const user = await tx.user.create({
+        data: {
+          email: this.crypto.encrypt(input.email),
+          emailHash: this.crypto.hmac(input.email),
+          passwordHash,
+          passwordSetAt: hasPassword ? new Date() : null,
+          name: this.crypto.encrypt(name),
+        },
+      });
+      const org = await tx.org.create({ data: { name: agencyName, profession } });
+      const membership = await tx.membership.create({ data: { userId: user.id, orgId: org.id, role: 'owner' } });
+      await tx.profile.create({ data: { orgId: org.id, agencyName, services: defs.services, skills: defs.skills } });
+      return { user, org, membership };
+    });
+  }
+
+  // Onboarding "set your password" for an auto-provisioned (trial) user so they can
+  // log back in later. Overwrites the random provisioning hash and stamps passwordSetAt.
+  async setPassword(userId: string, password: string) {
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash, passwordSetAt: new Date() } });
+    return { ok: true };
   }
 
   async login(email: string, password: string) {

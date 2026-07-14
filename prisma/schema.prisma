@@ -64,6 +64,12 @@ model User {
   email             String
   emailHash         String?        @unique
   passwordHash      String
+  // Null until the user has chosen a real password. Card-first trial signups are
+  // auto-provisioned with a random unusable password (passwordSetAt = null) so the
+  // onboarding "set your password" step (and needsOnboarding) can be gated on it.
+  // Normal signup sets it at creation. Idempotent claim-trial reads it to decide
+  // needsOnboarding, so a repeated claim before onboarding still routes to onboarding.
+  passwordSetAt     DateTime?
   name              String
   preferredLanguage String?
   createdAt         DateTime       @default(now())

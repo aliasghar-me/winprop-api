@@ -30,5 +30,7 @@
   "mfaNotEnrolled": "আগে দুই-ধাপ নিবন্ধন শুরু করুন।",
   "idempotencyConflict": "এই আইডেম্পোটেন্সি কী সহ একটি অনুরোধ ইতিমধ্যে চলছে।",
   "exportFailed": "PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।",
-  "badRequest": "অবৈধ অনুরোধ।"
+  "badRequest": "অবৈধ অনুরোধ।",
+  "billingNotConfigured": "Free trials are temporarily unavailable. Please try again shortly.",
+  "trialSessionInvalid": "This trial checkout could not be verified. Please try again."
 }
