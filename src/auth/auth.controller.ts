@@ -4,19 +4,27 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './email-verification.service';
+import { TrialCheckoutService } from './trial-checkout.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user';
 import type { JwtUser } from './jwt.strategy';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ClaimTrialDto } from './dto/claim-trial.dto';
+import { SetPasswordDto } from './dto/set-password.dto';
 import { AuthTokenDto } from './dto/auth-token.dto';
+import { ClaimTrialResultDto } from './dto/claim-trial-result.dto';
 import { AppException } from '../common/errors/app-exception';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService, private emailVerification: EmailVerificationService) {}
+  constructor(
+    private auth: AuthService,
+    private emailVerification: EmailVerificationService,
+    private trialCheckout: TrialCheckoutService,
+  ) {}
 
   private setRefresh(res: Response, token: string) {
     res.cookie('refresh', token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 3600 * 1000 });
@@ -70,6 +78,25 @@ export class AuthController {
     await this.auth.revokeAllForUser(u.userId);
     res.clearCookie('refresh');
     return { ok: true };
+  }
+
+  // Card-first trial: verify a completed Stripe Checkout, then auto-provision +
+  // auto-login (idempotent). Sets the same httpOnly refresh cookie as signup/login.
+  @Post('claim-trial')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @ApiCreatedResponse({ type: ClaimTrialResultDto })
+  async claimTrial(@Body() dto: ClaimTrialDto, @Res({ passthrough: true }) res: Response) {
+    const { tokens, needsOnboarding } = await this.trialCheckout.claimTrial(dto.sessionId);
+    this.setRefresh(res, tokens.refreshToken);
+    return { accessToken: tokens.accessToken, needsOnboarding };
+  }
+
+  // Onboarding "set your password" — lets an auto-provisioned trial user pick a real
+  // password so they can log back in later. Authenticated (uses the trial session).
+  @Post('set-password') @UseGuards(JwtAuthGuard) @ApiBearerAuth()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  setPassword(@CurrentUser() u: JwtUser, @Body() dto: SetPasswordDto) {
+    return this.auth.setPassword(u.userId, dto.password);
   }
 
   // Confirm an email address from the link token (public — the user may be logged out).

@@ -6,9 +6,11 @@ import { AppException } from '../common/errors/app-exception';
 import { clientIp } from '../common/net/client-ip';
 import { TrialThrottled } from '../common/throttler/trial-throttled.decorator';
 import { TrialService, type TrialSignals } from '../trial/trial.service';
+import { TrialCheckoutService } from '../auth/trial-checkout.service';
 import { NEUTRAL_PROFILE } from './neutral-profile';
 import { PublicAssessDto } from './dto/public-assess.dto';
 import { PublicAssessResultDto, PublicProposalResultDto } from './dto/public-trial-result.dto';
+import { TrialCheckoutResultDto } from './dto/trial-checkout-result.dto';
 
 // Anonymous free-trial funnel: lets a NON-authenticated visitor get the
 // "Should I Apply?" verdict + one proposal without signing up, tracked/limited
@@ -18,7 +20,21 @@ import { PublicAssessResultDto, PublicProposalResultDto } from './dto/public-tri
 @ApiTags('public')
 @Controller('public')
 export class PublicTrialController {
-  constructor(private trial: TrialService, private llm: LlmService) {}
+  constructor(
+    private trial: TrialService,
+    private llm: LlmService,
+    private trialCheckout: TrialCheckoutService,
+  ) {}
+
+  // Card-first $0 trial: create a Stripe Checkout Session (card captured, 1-day
+  // trial → Starter). No auth/org yet — the account is provisioned on claim-trial.
+  @Post('trial-checkout')
+  @HttpCode(200)
+  @TrialThrottled()
+  @ApiOkResponse({ type: TrialCheckoutResultDto })
+  startTrialCheckout(): Promise<TrialCheckoutResultDto> {
+    return this.trialCheckout.createCheckoutSession();
+  }
 
   @Post('assess')
   @HttpCode(200)
