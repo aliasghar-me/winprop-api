@@ -74,6 +74,16 @@ describe('TrialService', () => {
       expect(svc.hash('1.2.3.4')).not.toBe('1.2.3.4');
       expect(svc.hash('1.2.3.4')).toMatch(/^[0-9a-f]{64}$/);
     });
+    it('hash() tolerates null/undefined input', () => {
+      const { svc } = makeService();
+      expect(svc.hash(undefined as any)).toMatch(/^[0-9a-f]{64}$/);
+      expect(svc.hash(undefined as any)).toBe(svc.hash(''));
+    });
+    it('deviceId tolerates missing signal fields', () => {
+      const { svc } = makeService();
+      const partial = { fingerprint: 'fp', userAgent: undefined, timezone: undefined, language: undefined, platform: undefined } as any;
+      expect(svc.deviceId(partial)).toMatch(/^[0-9a-f]{64}$/);
+    });
   });
 
   describe('budget', () => {
@@ -188,6 +198,17 @@ describe('TrialService', () => {
       expect(table.rows[0].proposalCount).toBe(1);
       expect(table.rows[0].trialUsed).toBe(true);
       expect(table.rows[0].tokenUsed).toBe(40);
+    });
+
+    it('stores country when provided and clamps non-positive/invalid token counts to 0', async () => {
+      const { svc, table } = makeService();
+      const s = sig({ country: 'GB' });
+      await svc.record(s, '2.2.2.2', 'verdict', -5);
+      expect(table.rows[0].country).toBe('GB');
+      expect(table.rows[0].tokenUsed).toBe(0);
+      // A NaN token count is also clamped to 0 (best-effort bookkeeping).
+      await svc.record(s, '2.2.2.2', 'verdict', Number.NaN);
+      expect(table.rows[0].tokenUsed).toBe(0);
     });
 
     it('never throws on a DB error (best-effort)', async () => {

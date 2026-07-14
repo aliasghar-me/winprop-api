@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { IsDefined, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
@@ -13,7 +13,7 @@ export class FingerprintSignalDto {
   @ApiProperty()
   @Transform(trim)
   @IsString({ message: m('validation.isString') })
-  @MinLength(1, { message: m('validation.minLength') })
+  @IsNotEmpty({ message: m('validation.isNotEmpty') })
   @MaxLength(256, { message: m('validation.maxLength') })
   visitorId: string;
 
@@ -69,6 +69,8 @@ export class PublicAssessDto {
   description: string;
 
   @ApiProperty({ type: FingerprintSignalDto })
+  @IsDefined({ message: m('validation.isObject') })
+  @IsObject({ message: m('validation.isObject') })
   @ValidateNested()
   @Type(() => FingerprintSignalDto)
   fingerprint: FingerprintSignalDto;
