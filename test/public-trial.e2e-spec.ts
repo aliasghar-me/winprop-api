@@ -75,6 +75,20 @@ describe('Anonymous trial (e2e)', () => {
       .expect(400);
   });
 
+  it('rejects a non-object fingerprint with 400', async () => {
+    await request(app.getHttpServer())
+      .post('/public/assess')
+      .send({ title: 'X', description: 'Y', fingerprint: 'not-an-object' })
+      .expect(400);
+  });
+
+  it('rejects an empty visitorId with 400', async () => {
+    await request(app.getHttpServer())
+      .post('/public/assess')
+      .send({ title: 'X', description: 'Y', fingerprint: { visitorId: '' } })
+      .expect(400);
+  });
+
   it('persists HASHES ONLY — no raw client IP in the row', async () => {
     const rows = await prisma.trialUsage.findMany();
     expect(rows.length).toBeGreaterThan(0);
