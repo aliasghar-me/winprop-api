@@ -30,5 +30,7 @@
   "mfaNotEnrolled": "पहले दो-कारक नामांकन शुरू करें।",
   "idempotencyConflict": "इस आइडेम्पोटेंसी कुंजी वाला अनुरोध पहले से प्रगति पर है।",
   "exportFailed": "PDF बनाया नहीं जा सका। कृपया पुनः प्रयास करें।",
-  "badRequest": "अमान्य अनुरोध।"
+  "badRequest": "अमान्य अनुरोध।",
+  "billingNotConfigured": "Free trials are temporarily unavailable. Please try again shortly.",
+  "trialSessionInvalid": "This trial checkout could not be verified. Please try again."
 }

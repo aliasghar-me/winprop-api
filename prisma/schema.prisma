@@ -64,6 +64,12 @@ model User {
   email             String
   emailHash         String?        @unique
   passwordHash      String
+  // Null until the user has chosen a real password. Card-first trial signups are
+  // auto-provisioned with a random unusable password (passwordSetAt = null) so the
+  // onboarding "set your password" step (and needsOnboarding) can be gated on it.
+  // Normal signup sets it at creation. Idempotent claim-trial reads it to decide
+  // needsOnboarding, so a repeated claim before onboarding still routes to onboarding.
+  passwordSetAt     DateTime?
   name              String
   preferredLanguage String?
   createdAt         DateTime       @default(now())
@@ -349,6 +355,29 @@ model MemoryAuditLog {
 model ProcessedEvent {
   id        String   @id            // Stripe event id
   createdAt DateTime @default(now())
+}
+
+// Anonymous free-trial usage (pre-auth). Lets a non-authenticated visitor get the
+// "Should I Apply?" verdict + one proposal without signing up, while tracking usage
+// server-side to deter abuse. NOT tenant-scoped — there is no org/user yet, so it is
+// deliberately absent from TENANT_KEY. PRIVACY: stores HASHES ONLY (never raw
+// IP / user-agent / fingerprint); `country` is coarse (header-derived) and optional.
+model TrialUsage {
+  id              String   @id @default(cuid())
+  deviceId        String   @unique              // sha256(fingerprint + ua + tz + lang + platform)
+  fingerprintHash String
+  ipHash          String
+  uaHash          String
+  country         String?
+  verdictCount    Int      @default(0)
+  proposalCount   Int      @default(0)
+  tokenUsed       Int      @default(0)
+  trialUsed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([ipHash])
+  @@index([fingerprintHash])
 }
 
 enum WebhookStatus {

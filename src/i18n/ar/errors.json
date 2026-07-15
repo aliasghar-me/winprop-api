@@ -30,5 +30,7 @@
   "mfaNotEnrolled": "ابدأ تسجيل التحقق بخطوتين أولاً.",
   "idempotencyConflict": "هناك طلب بنفس مفتاح العملية قيد التنفيذ بالفعل.",
   "exportFailed": "تعذّر إنشاء ملف PDF. حاول مرة أخرى.",
-  "badRequest": "طلب غير صالح."
+  "badRequest": "طلب غير صالح.",
+  "billingNotConfigured": "Free trials are temporarily unavailable. Please try again shortly.",
+  "trialSessionInvalid": "This trial checkout could not be verified. Please try again."
 }

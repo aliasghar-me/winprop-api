@@ -159,6 +159,66 @@
         ]
       }
     },
+    "/auth/claim-trial": {
+      "post": {
+        "operationId": "AuthController_claimTrial",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimTrialDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimTrialResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/set-password": {
+      "post": {
+        "operationId": "AuthController_setPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/verify-email": {
       "post": {
         "operationId": "AuthController_verifyEmail",
@@ -199,6 +259,124 @@
         ],
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/billing/checkout": {
+      "post": {
+        "operationId": "BillingController_checkout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/billing/portal": {
+      "post": {
+        "operationId": "BillingController_portal",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/billing/status": {
+      "get": {
+        "operationId": "BillingController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/billing/webhook": {
+      "post": {
+        "operationId": "BillingController_webhook",
+        "parameters": [
+          {
+            "name": "stripe-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookReceivedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "billing"
         ]
       }
     },
@@ -1254,124 +1432,6 @@
         ]
       }
     },
-    "/billing/checkout": {
-      "post": {
-        "operationId": "BillingController_checkout",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CheckoutDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckoutSessionDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "billing"
-        ]
-      }
-    },
-    "/billing/portal": {
-      "post": {
-        "operationId": "BillingController_portal",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckoutSessionDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "billing"
-        ]
-      }
-    },
-    "/billing/status": {
-      "get": {
-        "operationId": "BillingController_status",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BillingStatusDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "billing"
-        ]
-      }
-    },
-    "/billing/webhook": {
-      "post": {
-        "operationId": "BillingController_webhook",
-        "parameters": [
-          {
-            "name": "stripe-signature",
-            "required": true,
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WebhookReceivedDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "billing"
-        ]
-      }
-    },
     "/me": {
       "get": {
         "operationId": "UsersController_me",
@@ -1557,6 +1617,89 @@
         ]
       }
     },
+    "/public/trial-checkout": {
+      "post": {
+        "operationId": "PublicTrialController_startTrialCheckout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialCheckoutResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/assess": {
+      "post": {
+        "operationId": "PublicTrialController_assess",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAssessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicAssessResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/proposal": {
+      "post": {
+        "operationId": "PublicTrialController_proposal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAssessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProposalResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
     "/jobs/{jobId}/documents/{docId}/pdf": {
       "get": {
         "operationId": "ExportController_pdf",
@@ -1713,6 +1856,45 @@
           "password"
         ]
       },
+      "ClaimTrialDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "sessionId"
+        ]
+      },
+      "ClaimTrialResultDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "needsOnboarding": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accessToken",
+          "needsOnboarding"
+        ]
+      },
+      "SetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "password"
+        ]
+      },
       "VerifyEmailDto": {
         "type": "object",
         "properties": {
@@ -1723,6 +1905,80 @@
         },
         "required": [
           "token"
+        ]
+      },
+      "CheckoutDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "starter",
+              "professional",
+              "agency"
+            ]
+          }
+        },
+        "required": [
+          "plan"
+        ]
+      },
+      "CheckoutSessionDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "BillingStatusDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "enum": [
+              "free",
+              "starter",
+              "professional",
+              "agency",
+              "enterprise"
+            ],
+            "type": "string"
+          },
+          "subStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "used": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "periodEnd": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "plan",
+          "used",
+          "limit"
+        ]
+      },
+      "WebhookReceivedDto": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "received"
         ]
       },
       "CreateJobDto": {
@@ -2339,80 +2595,6 @@
           "tone"
         ]
       },
-      "CheckoutDto": {
-        "type": "object",
-        "properties": {
-          "plan": {
-            "type": "string",
-            "enum": [
-              "starter",
-              "professional",
-              "agency"
-            ]
-          }
-        },
-        "required": [
-          "plan"
-        ]
-      },
-      "CheckoutSessionDto": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "url"
-        ]
-      },
-      "BillingStatusDto": {
-        "type": "object",
-        "properties": {
-          "plan": {
-            "enum": [
-              "free",
-              "starter",
-              "professional",
-              "agency",
-              "enterprise"
-            ],
-            "type": "string"
-          },
-          "subStatus": {
-            "type": "string",
-            "nullable": true
-          },
-          "used": {
-            "type": "number"
-          },
-          "limit": {
-            "type": "number"
-          },
-          "periodEnd": {
-            "format": "date-time",
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "plan",
-          "used",
-          "limit"
-        ]
-      },
-      "WebhookReceivedDto": {
-        "type": "object",
-        "properties": {
-          "received": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "received"
-        ]
-      },
       "MeDto": {
         "type": "object",
         "properties": {
@@ -2748,6 +2930,126 @@
         "required": [
           "sections",
           "lockedTitles"
+        ]
+      },
+      "TrialCheckoutResultDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "FingerprintSignalDto": {
+        "type": "object",
+        "properties": {
+          "visitorId": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "userAgent": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "platform": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "canvas": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "visitorId"
+        ]
+      },
+      "PublicAssessDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "fingerprint": {
+            "$ref": "#/components/schemas/FingerprintSignalDto"
+          },
+          "website": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "fingerprint"
+        ]
+      },
+      "TrialRemainingDto": {
+        "type": "object",
+        "properties": {
+          "verdicts": {
+            "type": "number",
+            "description": "Free \"Should I Apply?\" verdicts left before the signup wall."
+          },
+          "proposals": {
+            "type": "number",
+            "description": "Free generated proposals left before the signup wall."
+          }
+        },
+        "required": [
+          "verdicts",
+          "proposals"
+        ]
+      },
+      "PublicAssessResultDto": {
+        "type": "object",
+        "properties": {
+          "analysis": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "remaining": {
+            "$ref": "#/components/schemas/TrialRemainingDto"
+          }
+        },
+        "required": [
+          "analysis",
+          "remaining"
+        ]
+      },
+      "PublicProposalResultDto": {
+        "type": "object",
+        "properties": {
+          "proposal": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "remaining": {
+            "$ref": "#/components/schemas/TrialRemainingDto"
+          }
+        },
+        "required": [
+          "proposal",
+          "remaining"
         ]
       },
       "AnalyticsSummaryDto": {

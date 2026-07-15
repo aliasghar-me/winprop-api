@@ -62,8 +62,12 @@ export class LlmService {
     return this.providers.find((p) => p.vendor === vendor);
   }
 
-  async generateProposal(profile: Profile & { profession?: string }, job: Job, memories: MemoryFact[] = []) {
+  // `opts.anon` routes an UNAUTHENTICATED call (free-trial funnel) through the same
+  // anonymous daily USD cap the preview uses (assertAnonBudget + recordAnonSpend), so
+  // the platform-funded spend on anon traffic has a hard daily ceiling.
+  async generateProposal(profile: Profile & { profession?: string }, job: Job, memories: MemoryFact[] = [], opts?: { anon?: boolean }) {
     await this.assertPlatformBudget();
+    if (opts?.anon) this.assertAnonBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.resolveProvider(cfg.provider);
@@ -78,6 +82,7 @@ export class LlmService {
       this.logger.error(`LLM generate failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
       throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
     }
+    if (opts?.anon) this.recordAnonSpend(costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens));
     return {
       text: result.text,
       provider: cfg.provider,
@@ -116,8 +121,10 @@ export class LlmService {
     }
   }
 
-  async analyzeJob(profile: Profile & { profession?: string }, job: Job, memories: MemoryFact[] = []) {
+  // `opts.anon` — see generateProposal: enforces + records the anonymous daily USD cap.
+  async analyzeJob(profile: Profile & { profession?: string }, job: Job, memories: MemoryFact[] = [], opts?: { anon?: boolean }) {
     await this.assertPlatformBudget();
+    if (opts?.anon) this.assertAnonBudget();
     const cfg = await this.prisma.llmConfig.findFirst({ where: { orgId: null } });
     if (!cfg) throw new AppException(503, 'LLM_NOT_CONFIGURED', 'errors.llmNotConfigured');
     const provider = this.resolveProvider(cfg.provider);
@@ -131,6 +138,7 @@ export class LlmService {
       this.logger.error(`LLM analyzeJob failed (${cfg.provider}/${cfg.model}): ${e?.message ?? e}`);
       throw new AppException(502, 'LLM_PROVIDER_ERROR', 'errors.llmGenerationFailed');
     }
+    if (opts?.anon) this.recordAnonSpend(costUsd(cfg.provider, cfg.model, result.promptTokens, result.completionTokens));
     return {
       text: result.text,
       provider: cfg.provider,
