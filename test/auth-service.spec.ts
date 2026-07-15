@@ -89,6 +89,63 @@ describe('AuthService', () => {
       const res = await svc.signup(dto);
       expect(res).toEqual({ accessToken: 'access.jwt', refreshToken: 'refresh.jwt' });
     });
+
+    it('stamps passwordSetAt when signup provides a real password', async () => {
+      const { prisma, tx } = makePrisma();
+      const svc = new AuthService(prisma, makeJwt(), makeEmailVerification(), crypto);
+      await svc.signup(dto);
+      const userData = tx.user.create.mock.calls[0][0].data;
+      expect(userData.passwordSetAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('provisionAccount', () => {
+    function makePrisma() {
+      const tx = {
+        user: { create: jest.fn().mockResolvedValue({ id: 'u1' }) },
+        org: { create: jest.fn().mockResolvedValue({ id: 'o1' }) },
+        membership: { create: jest.fn().mockResolvedValue({ role: 'owner' }) },
+        profile: { create: jest.fn().mockResolvedValue({}) },
+      };
+      return { tx, prisma: { $transaction: jest.fn(async (cb: any) => cb(tx)) } as any };
+    }
+
+    it('provisions a trial account (email only): random unusable password, passwordSetAt null, developer defaults', async () => {
+      const { prisma, tx } = makePrisma();
+      const svc = new AuthService(prisma, makeJwt(), makeEmailVerification(), crypto);
+      const out = await svc.provisionAccount({ email: 'trial@x.com' });
+
+      const userData = tx.user.create.mock.calls[0][0].data;
+      expect(userData.emailHash).toBe('hmac(trial@x.com)');
+      expect(userData.passwordSetAt).toBeNull();
+      expect(typeof userData.passwordHash).toBe('string');
+      expect(userData.name).toBe('enc()'); // empty name encrypted
+      expect(tx.org.create).toHaveBeenCalledWith({ data: { name: '', profession: 'developer' } });
+      expect(tx.profile.create).toHaveBeenCalled();
+      expect(out).toEqual({ user: { id: 'u1' }, org: { id: 'o1' }, membership: { role: 'owner' } });
+    });
+
+    it('uses the provided profession defaults and agencyName', async () => {
+      const { prisma, tx } = makePrisma();
+      const svc = new AuthService(prisma, makeJwt(), makeEmailVerification(), crypto);
+      await svc.provisionAccount({ email: 'e@x.com', name: 'Bob', agencyName: 'Studio', profession: 'designer' as any });
+      expect(tx.org.create).toHaveBeenCalledWith({ data: { name: 'Studio', profession: 'designer' } });
+      const profileData = tx.profile.create.mock.calls[0][0].data;
+      expect(profileData.agencyName).toBe('Studio');
+    });
+  });
+
+  describe('setPassword', () => {
+    it('hashes the new password and stamps passwordSetAt', async () => {
+      const prisma: any = { user: { update: jest.fn().mockResolvedValue({}) } };
+      const svc = new AuthService(prisma, makeJwt(), makeEmailVerification(), crypto);
+      const out = await svc.setPassword('u1', 'a-new-password');
+      expect(out).toEqual({ ok: true });
+      const arg = prisma.user.update.mock.calls[0][0];
+      expect(arg.where).toEqual({ id: 'u1' });
+      expect(typeof arg.data.passwordHash).toBe('string');
+      expect(arg.data.passwordSetAt).toBeInstanceOf(Date);
+    });
   });
 
   describe('login', () => {

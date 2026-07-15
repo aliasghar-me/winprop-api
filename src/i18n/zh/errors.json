@@ -30,5 +30,7 @@
   "mfaNotEnrolled": "请先开始双重验证注册。",
   "idempotencyConflict": "使用此幂等键的请求已在处理中。",
   "exportFailed": "无法生成 PDF，请重试。",
-  "badRequest": "无效的请求。"
+  "badRequest": "无效的请求。",
+  "billingNotConfigured": "Free trials are temporarily unavailable. Please try again shortly.",
+  "trialSessionInvalid": "This trial checkout could not be verified. Please try again."
 }

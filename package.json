@@ -26,6 +26,7 @@
     "prepare": "husky || true"
   },
   "dependencies": {
+    "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
@@ -43,6 +44,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^8.2.0",
+    "ioredis": "^5.11.1",
     "nestjs-i18n": "^10.8.4",
     "nestjs-pino": "^4.6.1",
     "passport": "^0.7.0",

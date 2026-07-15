@@ -1,5 +1,5 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { Module, MiddlewareConsumer, NestModule, ExecutionContext } from '@nestjs/common';
+import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { LoggerModule } from 'nestjs-pino';
@@ -7,7 +7,10 @@ import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import { TenantContextMiddleware } from './common/tenant/tenant-context.middleware.js';
 import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor.js';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { AppThrottlerGuard } from './common/throttler/app-throttler.guard.js';
+import { TRIAL_THROTTLED_KEY } from './common/throttler/trial-throttled.decorator.js';
+import { clientIp } from './common/net/client-ip.js';
 import { ProfileModule } from './profile/profile.module.js';
 import { PublicModule } from './public/public.module.js';
 import { AppController } from './app.controller.js';
@@ -53,9 +56,33 @@ import { UserPreferenceResolver } from './i18n/resolvers/user-preference.resolve
         { use: QueryResolver, options: ['lang'] },
       ],
     }),
-    // Global rate limiting (abuse prevention). Default 100 req/min/IP; tighter
-    // per-route caps live on sensitive endpoints (auth + admin login).
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+    // Global rate limiting (abuse prevention). The `default` throttler keeps the
+    // original 100 req/min/IP for the whole app; per-route caps still override it
+    // (auth + admin login + the anon preview). The `ipHour`/`ipDay`/`fpMin`
+    // throttlers add strict anti-abuse limits for the ANONYMOUS free-trial funnel
+    // ONLY — their `skipIf` skips every route that is not @TrialThrottled(), so they
+    // never affect authenticated app traffic. Storage is Redis-backed ONLY when
+    // REDIS_URL is set (multi-instance); unit/e2e/CI leave it unset → in-memory
+    // storage → no external dependency and the coverage gate stays green.
+    ThrottlerModule.forRootAsync({
+      useFactory: () => {
+        const reflector = new Reflector();
+        const trialOnly = (ctx: ExecutionContext): boolean =>
+          !reflector.getAllAndOverride<boolean>(TRIAL_THROTTLED_KEY, [ctx.getHandler(), ctx.getClass()]);
+        const byIp = (req: Record<string, any>) => clientIp(req as any);
+        const byFingerprint = (req: Record<string, any>) => req?.body?.fingerprint?.visitorId || clientIp(req as any);
+        const throttlers = [
+          { name: 'default', ttl: 60_000, limit: 100 },
+          { name: 'ipHour', ttl: 3_600_000, limit: 10, skipIf: trialOnly, getTracker: byIp },
+          { name: 'ipDay', ttl: 86_400_000, limit: 100, skipIf: trialOnly, getTracker: byIp },
+          { name: 'fpMin', ttl: 60_000, limit: 20, skipIf: trialOnly, getTracker: byFingerprint },
+        ];
+        if (process.env.REDIS_URL) {
+          return { throttlers, storage: new ThrottlerStorageRedisService(process.env.REDIS_URL) };
+        }
+        return { throttlers };
+      },
+    }),
     PrismaModule,
     CryptoModule,
     AuthModule,

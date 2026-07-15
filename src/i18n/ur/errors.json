@@ -30,5 +30,7 @@
   "mfaNotEnrolled": "پہلے دو عنصری اندراج شروع کریں۔",
   "idempotencyConflict": "اس آئیڈیمپوٹینسی کلید والی درخواست پہلے سے جاری ہے۔",
   "exportFailed": "PDF نہیں بن سکا۔ دوبارہ کوشش کریں۔",
-  "badRequest": "غلط درخواست۔"
+  "badRequest": "غلط درخواست۔",
+  "billingNotConfigured": "Free trials are temporarily unavailable. Please try again shortly.",
+  "trialSessionInvalid": "This trial checkout could not be verified. Please try again."
 }
