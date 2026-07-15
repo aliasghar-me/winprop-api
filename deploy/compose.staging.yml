@@ -1,5 +1,11 @@
 name: winprop-staging
 
+# Deploys behind the host's EXISTING shared Caddy (docker network `proxy`), which
+# already terminates TLS on :80/:443 for the other apps on the box. WinProp runs NO
+# Caddy of its own — its `api` joins the `proxy` network and Caddy reverse-proxies to
+# `winprop-api:3001`. Interpolated vars (DB_PASSWORD, CADDY_NET, GHCR_OWNER) come from
+# /opt/winprop/.env.staging — the deploy passes `--env-file .env.staging`.
+
 services:
   postgres:
     image: postgres:16
@@ -18,8 +24,17 @@ services:
     networks:
       - internal
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Ephemeral throttler / rate-limit counters — no persistence, LRU-capped memory.
+    command: ["redis-server", "--save", "", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    networks:
+      - internal
+
   api:
     image: ghcr.io/${GHCR_OWNER}/winprop-api:${IMAGE_TAG:-staging}
+    container_name: winprop-api          # stable target for the shared Caddy's reverse_proxy
     restart: unless-stopped
     env_file:
       - /opt/winprop/.env.staging
@@ -33,31 +48,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 40s
     networks:
-      - internal
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - /opt/winprop/Caddyfile.staging:/etc/caddy/Caddyfile:ro
-      - caddy_staging_data:/data
-      - caddy_staging_config:/config
-    depends_on:
-      - api
-    networks:
-      - internal
-
-volumes:
-  postgres_staging_data:
-  caddy_staging_data:
-  caddy_staging_config:
+      - internal          # reach postgres + redis
+      - proxy             # reachable by the shared Caddy
 
 networks:
   internal:
     driver: bridge
+  proxy:
+    external: true
+    name: ${CADDY_NET}    # the existing Caddy container's docker network (e.g. `proxy`)
+
+volumes:
+  postgres_staging_data:
