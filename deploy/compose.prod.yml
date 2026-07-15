@@ -1,5 +1,10 @@
 name: winprop-prod
 
+# Same topology as staging: WinProp runs NO Caddy of its own — the host's EXISTING
+# shared Caddy (docker network `proxy`) terminates TLS and reverse-proxies to
+# `winprop-api:3001`. Interpolated vars come from /opt/winprop/.env.prod (the deploy
+# passes `--env-file .env.prod`).
+
 services:
   postgres:
     image: postgres:16
@@ -18,8 +23,16 @@ services:
     networks:
       - internal
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    networks:
+      - internal
+
   api:
     image: ghcr.io/${GHCR_OWNER}/winprop-api:${IMAGE_TAG:-prod}
+    container_name: winprop-api-prod       # stable target for the shared Caddy's reverse_proxy
     restart: unless-stopped
     env_file:
       - /opt/winprop/.env.prod
@@ -33,31 +46,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 40s
     networks:
       - internal
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - /opt/winprop/Caddyfile.prod:/etc/caddy/Caddyfile:ro
-      - caddy_prod_data:/data
-      - caddy_prod_config:/config
-    depends_on:
-      - api
-    networks:
-      - internal
-
-volumes:
-  postgres_prod_data:
-  caddy_prod_data:
-  caddy_prod_config:
+      - proxy
 
 networks:
   internal:
     driver: bridge
+  proxy:
+    external: true
+    name: ${CADDY_NET}
+
+volumes:
+  postgres_prod_data:
