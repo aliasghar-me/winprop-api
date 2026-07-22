@@ -25,7 +25,7 @@ describe('AuthController (trial endpoints)', () => {
       expect(trialCheckout.claimTrial).toHaveBeenCalledWith('cs_1');
       expect(out).toEqual({ accessToken: 'access.jwt', needsOnboarding: true });
       expect(res.cookies[0]).toMatchObject({ name: 'refresh', value: 'refresh.jwt' });
-      expect(res.cookies[0].opts).toMatchObject({ httpOnly: true, sameSite: 'lax' });
+      expect(res.cookies[0].opts).toMatchObject({ httpOnly: true, sameSite: 'none', secure: true });
     });
   });
 

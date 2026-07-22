@@ -27,6 +27,11 @@ export function validateEnv(): void {
   req('STRIPE_SECRET_KEY');
   req('STRIPE_WEBHOOK_SECRET');
 
+  const sameSiteVal = process.env.AUTH_COOKIE_SAMESITE;
+  if (sameSiteVal && !['none', 'lax', 'strict'].includes(sameSiteVal)) {
+    errors.push('AUTH_COOKIE_SAMESITE must be one of: none | lax | strict (or unset to use default "none")');
+  }
+
   if (errors.length) {
     // Do not leak values — names only.
     throw new Error(`Refusing to start — invalid environment:\n  - ${errors.join('\n  - ')}`);
