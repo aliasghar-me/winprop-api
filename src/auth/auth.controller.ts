@@ -26,8 +26,14 @@ export class AuthController {
     private trialCheckout: TrialCheckoutService,
   ) {}
 
+  private refreshCookieOptions(): { httpOnly: true; sameSite: 'none' | 'lax' | 'strict'; secure: boolean } {
+    const sameSite = (process.env.AUTH_COOKIE_SAMESITE ?? 'none') as 'none' | 'lax' | 'strict';
+    const secure = sameSite === 'none' ? true : process.env.NODE_ENV === 'production';
+    return { httpOnly: true, sameSite, secure };
+  }
+
   private setRefresh(res: Response, token: string) {
-    res.cookie('refresh', token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 3600 * 1000 });
+    res.cookie('refresh', token, { ...this.refreshCookieOptions(), maxAge: 7 * 24 * 3600 * 1000 });
   }
 
   // CSRF defense-in-depth for the cookie-driven endpoints: if a browser sends an
@@ -68,7 +74,7 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     this.assertOrigin(req);
     await this.auth.logout(req.cookies?.refresh);
-    res.clearCookie('refresh');
+    res.clearCookie('refresh', this.refreshCookieOptions());
     return { ok: true };
   }
 
@@ -76,7 +82,7 @@ export class AuthController {
   @Post('logout-all') @UseGuards(JwtAuthGuard) @ApiBearerAuth()
   async logoutAll(@CurrentUser() u: JwtUser, @Res({ passthrough: true }) res: Response) {
     await this.auth.revokeAllForUser(u.userId);
-    res.clearCookie('refresh');
+    res.clearCookie('refresh', this.refreshCookieOptions());
     return { ok: true };
   }
 
