@@ -9,7 +9,6 @@ function makeJob(overrides: {
   wonAmountUsd?: number | null;
   intelligenceJson?: unknown;
   createdAt?: Date;
-  updatedAt?: Date;
   _count?: { documents: number };
 }) {
   return {
@@ -17,7 +16,6 @@ function makeJob(overrides: {
     wonAmountUsd: overrides.wonAmountUsd ?? null,
     intelligenceJson: overrides.intelligenceJson ?? null,
     createdAt: overrides.createdAt ?? new Date('2024-01-01T00:00:00Z'),
-    updatedAt: overrides.updatedAt ?? new Date('2024-01-01T00:00:00Z'),
     _count: overrides._count ?? { documents: 0 },
   };
 }
@@ -41,21 +39,18 @@ describe('AnalyticsService.bySkill', () => {
 
   it('aggregates React and Node correctly for a won React+Node job and a lost React-only job', async () => {
     const createdAt = new Date('2024-01-01T00:00:00Z');
-    const updatedAt = new Date('2024-01-05T00:00:00Z'); // 4 days later
     prisma.job.findMany.mockResolvedValue([
       makeJob({
         status: 'won',
         wonAmountUsd: 8000,
         intelligenceJson: { stack: ['React', 'Node'] },
         createdAt,
-        updatedAt,
       }),
       makeJob({
         status: 'lost',
         wonAmountUsd: null,
         intelligenceJson: { stack: ['React'] },
         createdAt,
-        updatedAt,
       }),
     ]);
 
@@ -141,13 +136,12 @@ describe('AnalyticsService.bySkill', () => {
 
   it('sorts skills by count descending with winRate as tiebreaker', async () => {
     const createdAt = new Date('2024-01-01T00:00:00Z');
-    const updatedAt = new Date('2024-01-03T00:00:00Z');
     prisma.job.findMany.mockResolvedValue([
       // TypeScript: 2 jobs (won + draft) — count 2
-      makeJob({ status: 'won', wonAmountUsd: 3000, intelligenceJson: { stack: ['TypeScript'] }, createdAt, updatedAt }),
-      makeJob({ status: 'draft', intelligenceJson: { stack: ['TypeScript'] }, createdAt, updatedAt }),
+      makeJob({ status: 'won', wonAmountUsd: 3000, intelligenceJson: { stack: ['TypeScript'] }, createdAt }),
+      makeJob({ status: 'draft', intelligenceJson: { stack: ['TypeScript'] }, createdAt }),
       // Python: 1 won job — count 1
-      makeJob({ status: 'won', wonAmountUsd: 6000, intelligenceJson: { stack: ['Python'] }, createdAt, updatedAt }),
+      makeJob({ status: 'won', wonAmountUsd: 6000, intelligenceJson: { stack: ['Python'] }, createdAt }),
     ]);
 
     const result = await service.bySkill('org-1');
@@ -155,45 +149,37 @@ describe('AnalyticsService.bySkill', () => {
     expect(result.skills[1].skill).toBe('Python');
   });
 
-  it('computes avgCloseDays as mean of (updatedAt - createdAt) over decided jobs only', async () => {
+  it('returns avgCloseDays as null (no decidedAt timestamp yet)', async () => {
     const createdAt = new Date('2024-01-01T00:00:00Z');
-    // won job: 4 days close time
-    const updatedAt1 = new Date('2024-01-05T00:00:00Z');
-    // lost job: 2 days close time
-    const updatedAt2 = new Date('2024-01-03T00:00:00Z');
     prisma.job.findMany.mockResolvedValue([
       makeJob({
         status: 'won',
         wonAmountUsd: 5000,
         intelligenceJson: { stack: ['Go'] },
         createdAt,
-        updatedAt: updatedAt1,
       }),
       makeJob({
         status: 'lost',
         wonAmountUsd: null,
         intelligenceJson: { stack: ['Go'] },
         createdAt,
-        updatedAt: updatedAt2,
       }),
     ]);
 
     const result = await service.bySkill('org-1');
     const go = result.skills.find((s) => s.skill === 'Go');
-    // avg of 4 and 2 = 3 days
-    expect(go!.avgCloseDays).toBe(3);
+    // avgCloseDays: null until a decidedAt timestamp exists (see plan deferrals).
+    expect(go!.avgCloseDays).toBeNull();
   });
 
   it('deduplicates skills per job — duplicate stack entries are counted once', async () => {
     const createdAt = new Date('2024-01-01T00:00:00Z');
-    const updatedAt = new Date('2024-01-05T00:00:00Z');
     prisma.job.findMany.mockResolvedValue([
       makeJob({
         status: 'won',
         wonAmountUsd: 5000,
         intelligenceJson: { stack: ['React', 'React'] },
         createdAt,
-        updatedAt,
       }),
     ]);
 

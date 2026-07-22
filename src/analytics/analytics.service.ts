@@ -77,17 +77,15 @@ export class AnalyticsService {
         wonAmountUsd: true,
         intelligenceJson: true,
         createdAt: true,
-        updatedAt: true,
       },
     });
 
     // Per-skill accumulators
     const skillMap = new Map<
       string,
-      { count: number; decided: number; wins: number; losses: number; wonAmounts: number[]; closeDays: number[] }
+      { count: number; decided: number; wins: number; losses: number; wonAmounts: number[] }
     >();
 
-    const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const decidedStatuses = new Set(['won', 'lost']);
 
     for (const j of jobs) {
@@ -111,15 +109,11 @@ export class AnalyticsService {
       const isDecided = decidedStatuses.has(j.status);
       const isWon = j.status === 'won';
       const isLost = j.status === 'lost';
-      // proxy: updatedAt — stand-in for a future decidedAt field
-      const closeDays = isDecided
-        ? Math.max(0, (j.updatedAt.getTime() - j.createdAt.getTime()) / MS_PER_DAY)
-        : null;
 
       const uniqueStack = [...new Set(stack)];
       for (const skill of uniqueStack) {
         if (!skillMap.has(skill)) {
-          skillMap.set(skill, { count: 0, decided: 0, wins: 0, losses: 0, wonAmounts: [], closeDays: [] });
+          skillMap.set(skill, { count: 0, decided: 0, wins: 0, losses: 0, wonAmounts: [] });
         }
         const acc = skillMap.get(skill)!;
         acc.count++;
@@ -129,7 +123,6 @@ export class AnalyticsService {
           if (j.wonAmountUsd != null) acc.wonAmounts.push(j.wonAmountUsd);
         }
         if (isLost) acc.losses++;
-        if (closeDays != null) acc.closeDays.push(closeDays);
       }
     }
 
@@ -144,9 +137,8 @@ export class AnalyticsService {
         ? Math.round(acc.wonAmounts.reduce((s, v) => s + v, 0) / acc.wonAmounts.length)
         : null,
       revenueWonUsd: acc.wonAmounts.reduce((s, v) => s + v, 0),
-      avgCloseDays: acc.closeDays.length > 0
-        ? Math.round((acc.closeDays.reduce((s, v) => s + v, 0) / acc.closeDays.length) * 10) / 10
-        : null,
+      // avgCloseDays: null until a decidedAt timestamp exists (see plan deferrals).
+      avgCloseDays: null as number | null,
     }));
 
     // Sort by count desc; tiebreak by winRate desc (null winRate ranks lowest).
