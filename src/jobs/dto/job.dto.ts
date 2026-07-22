@@ -16,5 +16,8 @@ export class JobDto {
   @ApiProperty({ enum: JobStatus }) status: JobStatus;
   @ApiPropertyOptional({ type: Object, nullable: true, description: 'AI Job-Intelligence analysis (null until generated).' })
   intelligenceJson?: Record<string, unknown> | null;
+  @ApiPropertyOptional({ nullable: true, description: 'USD amount awarded when status=won.' }) wonAmountUsd?: number | null;
+  @ApiPropertyOptional({ nullable: true, description: 'Why the deal was won or lost (seeds the learning loop).' }) outcomeReason?: string | null;
+  @ApiPropertyOptional({ description: 'True when at least one proposal document has been generated for this job.' }) applied?: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt: Date;
 }
