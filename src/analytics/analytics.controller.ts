@@ -7,6 +7,7 @@ import { CurrentUser } from '../auth/decorators/current-user';
 import type { JwtUser } from '../auth/jwt.strategy';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsSummaryDto } from './dto/analytics-summary.dto';
+import { SkillReputationListDto } from './dto/skill-reputation.dto';
 
 @ApiTags('analytics')
 @ApiBearerAuth()
@@ -19,5 +20,11 @@ export class AnalyticsController {
   @ApiOkResponse({ type: AnalyticsSummaryDto })
   summary(@CurrentUser() u: JwtUser) {
     return this.analytics.summary(u.orgId);
+  }
+
+  @Get('by-skill')
+  @ApiOkResponse({ type: SkillReputationListDto })
+  bySkill(@CurrentUser() u: JwtUser) {
+    return this.analytics.bySkill(u.orgId);
   }
 }

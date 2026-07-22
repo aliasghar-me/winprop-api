@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SkillReputationListDto } from './dto/skill-reputation.dto';
 
 // Win-rate read model (Phase-6 groundwork). Aggregates the org's Jobs by pipeline
 // status — no new tracking needed (status transitions are already captured).
@@ -66,5 +67,95 @@ export class AnalyticsService {
       revenuePerProposalUsd: sent > 0 ? Math.round(revenueWonUsd / sent) : null,
       revenueOpportunityLostUsd,
     };
+  }
+
+  async bySkill(orgId: string): Promise<SkillReputationListDto> {
+    const jobs = await this.prisma.job.findMany({
+      where: { orgId },
+      select: {
+        status: true,
+        wonAmountUsd: true,
+        intelligenceJson: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Per-skill accumulators
+    const skillMap = new Map<
+      string,
+      { count: number; decided: number; wins: number; losses: number; wonAmounts: number[]; closeDays: number[] }
+    >();
+
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const decidedStatuses = new Set(['won', 'lost']);
+
+    for (const j of jobs) {
+      // Defensive JSON parse: intelligenceJson may be a string, object, null,
+      // or other scalar — wrap in try/catch and skip on any error or missing stack.
+      let stack: string[] | null = null;
+      try {
+        const raw = j.intelligenceJson;
+        if (raw != null && typeof raw === 'object' && !Array.isArray(raw)) {
+          const candidate = (raw as Record<string, unknown>)['stack'];
+          if (Array.isArray(candidate)) {
+            stack = candidate.filter((s): s is string => typeof s === 'string');
+          }
+        }
+      } catch {
+        // malformed — skip
+      }
+
+      if (!stack || stack.length === 0) continue;
+
+      const isDecided = decidedStatuses.has(j.status);
+      const isWon = j.status === 'won';
+      const isLost = j.status === 'lost';
+      // proxy: updatedAt — stand-in for a future decidedAt field
+      const closeDays = isDecided
+        ? (j.updatedAt.getTime() - j.createdAt.getTime()) / MS_PER_DAY
+        : null;
+
+      for (const skill of stack) {
+        if (!skillMap.has(skill)) {
+          skillMap.set(skill, { count: 0, decided: 0, wins: 0, losses: 0, wonAmounts: [], closeDays: [] });
+        }
+        const acc = skillMap.get(skill)!;
+        acc.count++;
+        if (isDecided) acc.decided++;
+        if (isWon) {
+          acc.wins++;
+          if (j.wonAmountUsd != null) acc.wonAmounts.push(j.wonAmountUsd);
+        }
+        if (isLost) acc.losses++;
+        if (closeDays != null) acc.closeDays.push(closeDays);
+      }
+    }
+
+    const skills = Array.from(skillMap.entries()).map(([skill, acc]) => ({
+      skill,
+      count: acc.count,
+      decided: acc.decided,
+      wins: acc.wins,
+      losses: acc.losses,
+      winRate: acc.decided > 0 ? Math.round((acc.wins / acc.decided) * 100) / 100 : null,
+      avgWonUsd: acc.wonAmounts.length > 0
+        ? Math.round(acc.wonAmounts.reduce((s, v) => s + v, 0) / acc.wonAmounts.length)
+        : null,
+      revenueWonUsd: acc.wonAmounts.reduce((s, v) => s + v, 0),
+      avgCloseDays: acc.closeDays.length > 0
+        ? Math.round((acc.closeDays.reduce((s, v) => s + v, 0) / acc.closeDays.length) * 10) / 10
+        : null,
+    }));
+
+    // Sort by count desc; tiebreak by winRate desc (null winRate ranks lowest).
+    skills.sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      const wa = a.winRate ?? -1;
+      const wb = b.winRate ?? -1;
+      return wb - wa;
+    });
+
+    return { skills, minSample: 3 };
   }
 }
