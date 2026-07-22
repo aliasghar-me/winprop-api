@@ -133,6 +133,17 @@ describe('AuthService', () => {
       const profileData = tx.profile.create.mock.calls[0][0].data;
       expect(profileData.agencyName).toBe('Studio');
     });
+
+    it('falls back to the developer defaults for an unknown profession (?? branch)', async () => {
+      const { prisma, tx } = makePrisma();
+      const svc = new AuthService(prisma, makeJwt(), makeEmailVerification(), crypto);
+      await svc.provisionAccount({ email: 'e@x.com', profession: 'astronaut' as any });
+      // org still records the raw profession value, but the Profile defaults come from developer
+      expect(tx.org.create).toHaveBeenCalledWith({ data: { name: '', profession: 'astronaut' } });
+      const profileData = tx.profile.create.mock.calls[0][0].data;
+      // developer defaults include NestJS in skills
+      expect(JSON.stringify(profileData)).toContain('NestJS');
+    });
   });
 
   describe('setPassword', () => {

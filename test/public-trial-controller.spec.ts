@@ -142,6 +142,55 @@ describe('PublicTrialController', () => {
     expect(sigArg).toMatchObject({ fingerprint: 'only-id', userAgent: 'HeaderUA', timezone: '', language: '', platform: '', country: 'US' });
   });
 
+  it('assess: reads cf-ipcountry header (cf takes precedence) for country', async () => {
+    const trial: any = {
+      evaluate: jest.fn().mockResolvedValue({ allowed: true, remaining: { verdicts: 2, proposals: 1 } }),
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    const llm: any = { analyzeJob: jest.fn().mockResolvedValue({ text: analysisJson, promptTokens: 1, completionTokens: 1 }) };
+    const ctrl = new PublicTrialController(trial, llm, tc);
+    const cfReq: any = { headers: { 'cf-ipcountry': 'DE', 'x-vercel-ip-country': 'US' }, ip: '5.5.5.5' };
+    await ctrl.assess(dto({ fingerprint: { visitorId: 'id', userAgent: 'FP-UA' } }) as any, cfReq, makeRes() as any);
+    const sigArg = trial.record.mock.calls[0][0];
+    // cf-ipcountry wins over vercel; fingerprint.userAgent wins over the header.
+    expect(sigArg).toMatchObject({ userAgent: 'FP-UA', country: 'DE' });
+  });
+
+  it('assess: no country headers → country is undefined', async () => {
+    const trial: any = {
+      evaluate: jest.fn().mockResolvedValue({ allowed: true, remaining: { verdicts: 2, proposals: 1 } }),
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    const llm: any = { analyzeJob: jest.fn().mockResolvedValue({ text: analysisJson, promptTokens: 1, completionTokens: 1 }) };
+    const ctrl = new PublicTrialController(trial, llm, tc);
+    const bareReq: any = { headers: {}, ip: '6.6.6.6' };
+    await ctrl.assess(dto() as any, bareReq, makeRes() as any);
+    const sigArg = trial.record.mock.calls[0][0];
+    expect(sigArg.country).toBeUndefined();
+  });
+
+  it('assess: no fingerprint UA and no header UA → empty string', async () => {
+    const trial: any = {
+      evaluate: jest.fn().mockResolvedValue({ allowed: true, remaining: { verdicts: 2, proposals: 1 } }),
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    const llm: any = { analyzeJob: jest.fn().mockResolvedValue({ text: analysisJson, promptTokens: 1, completionTokens: 1 }) };
+    const ctrl = new PublicTrialController(trial, llm, tc);
+    const bareReq: any = { headers: {}, ip: '7.7.7.7' };
+    await ctrl.assess(dto({ fingerprint: { visitorId: 'id' } }) as any, bareReq, makeRes() as any);
+    const sigArg = trial.record.mock.calls[0][0];
+    expect(sigArg.userAgent).toBe('');
+  });
+
+  it('proposal: filled honeypot → rejected (400) before evaluate/LLM', async () => {
+    const trial: any = { evaluate: jest.fn(), record: jest.fn() };
+    const llm: any = { generateProposal: jest.fn() };
+    const ctrl = new PublicTrialController(trial, llm, tc);
+    await expect(ctrl.proposal(dto({ website: 'http://spam' }) as any, req, makeRes() as any)).rejects.toBeInstanceOf(AppException);
+    expect(trial.evaluate).not.toHaveBeenCalled();
+    expect(llm.generateProposal).not.toHaveBeenCalled();
+  });
+
   it('proposal: not-allowed → 402, no cookie, no LLM call', async () => {
     const trial: any = {
       evaluate: jest.fn().mockResolvedValue({ allowed: false, reason: 'proposal_used', remaining: { verdicts: 2, proposals: 0 } }),

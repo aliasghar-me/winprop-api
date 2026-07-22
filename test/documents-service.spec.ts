@@ -438,4 +438,13 @@ describe('DocumentsService share base url', () => {
     const r = await svc.share('org1', 'job1', 'doc1');
     expect(r.url).toContain('https://app.example.com/p/');
   });
+
+  it('prefers the explicit PROPOSAL_SHARE_BASE_URL when set (|| short-circuits)', async () => {
+    process.env.PROPOSAL_SHARE_BASE_URL = 'https://share.winprop.ai/x';
+    process.env.WEB_ORIGIN = 'https://ignored.example.com';
+    const { svc } = makeDeps();
+    const r = await svc.share('org1', 'job1', 'doc1');
+    expect(r.url).toContain('https://share.winprop.ai/x/');
+    expect(r.url).not.toContain('ignored');
+  });
 });

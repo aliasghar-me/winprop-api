@@ -131,6 +131,15 @@ describe('LlmService.extractMemories', () => {
   it('returns [] when there is no LLM config', async () => {
     expect(await makeService(okProvider('{"facts":[]}'), { cfg: null }).extractMemories('x')).toEqual([]);
   });
+  it('returns [] when the configured provider cannot be resolved', async () => {
+    // config says anthropic but only an openai provider is registered → resolveProvider undefined
+    const svc = makeService(okProvider('{"facts":[]}', 'openai'), { cfg: { provider: 'anthropic', model: 'claude-opus-4-8' } });
+    expect(await svc.extractMemories('x')).toEqual([]);
+  });
+  it('returns [] when parsed.facts is absent / not an array', async () => {
+    // valid JSON but no `facts` array → Array.isArray(...) false branch → []
+    expect(await makeService(okProvider('{"notFacts":1}')).extractMemories('x')).toEqual([]);
+  });
   it('defaults category, clamps confidence, and drops facts missing key/value', async () => {
     const svc = makeService(okProvider('{"facts":[{"key":"k","value":"v"},{"value":"no key"},{"key":"c","value":"x","category":"business","confidence":5}]}'));
     expect(await svc.extractMemories('x')).toEqual([
@@ -189,6 +198,23 @@ describe('LlmService.generateProposal', () => {
     const svc = makeService(okProvider('{}'), { platformSpend: 50 });
     await expect(svc.generateProposal(profile, job)).resolves.toBeDefined();
   });
+
+  it('anon path: enforces + records the anon daily cap (opts.anon true)', async () => {
+    delete process.env.LLM_DAILY_USD_CAP;
+    process.env.LLM_ANON_DAILY_USD_CAP = '1000'; // well above one call's cost
+    const svc = makeService(okProvider('{"summary":"x"}'));
+    const r = await svc.generateProposal(profile, job, [], { anon: true });
+    expect(r.text).toContain('summary'); // succeeded → assertAnonBudget + recordAnonSpend both ran
+  });
+
+  it('anon path: 429 when the anon daily cap is already exhausted', async () => {
+    delete process.env.LLM_DAILY_USD_CAP;
+    process.env.LLM_ANON_DAILY_USD_CAP = '0'; // cap 0 → any prior/zero spend >= cap → reject
+    const svc = makeService(okProvider('{"summary":"x"}'));
+    const e = await grab(() => svc.generateProposal(profile, job, [], { anon: true }));
+    expect(e.code).toBe('QUOTA_EXCEEDED');
+    expect(e.getStatus()).toBe(429);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -200,6 +226,22 @@ describe('LlmService.analyzeJob', () => {
     const r = await svc.analyzeJob(profile, job);
     expect(r.text).toContain('objective');
     expect(r.costUsd).toBeGreaterThan(0);
+  });
+
+  it('anon path: enforces + records the anon daily cap (opts.anon true)', async () => {
+    delete process.env.LLM_DAILY_USD_CAP;
+    process.env.LLM_ANON_DAILY_USD_CAP = '1000';
+    const svc = makeService(okProvider('{"objective":"x"}'));
+    const r = await svc.analyzeJob(profile, job, [], { anon: true });
+    expect(r.text).toContain('objective');
+  });
+
+  it('anon path: 429 when the anon daily cap is already exhausted', async () => {
+    delete process.env.LLM_DAILY_USD_CAP;
+    process.env.LLM_ANON_DAILY_USD_CAP = '0';
+    const svc = makeService(okProvider('{"objective":"x"}'));
+    const e = await grab(() => svc.analyzeJob(profile, job, [], { anon: true }));
+    expect(e.code).toBe('QUOTA_EXCEEDED');
   });
 
   it('503 when no config', async () => {

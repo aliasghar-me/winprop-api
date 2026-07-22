@@ -228,4 +228,72 @@ describe('JobsService.analyze', () => {
     const { svc } = makeDeps({ prisma: { db: { job: { findFirst: jest.fn().mockResolvedValue(null) } } } });
     await expect(svc.analyze('org1', 'job1')).rejects.toMatchObject({ code: 'NOT_FOUND', translationKey: 'errors.jobNotFound' });
   });
+
+  it('proceeds when the memory lookup rejects (best-effort empty memories)', async () => {
+    const { svc, llm, memory } = makeDeps();
+    memory.forPrompt.mockRejectedValueOnce(new Error('memory down'));
+    const result = await svc.analyze('org1', 'job1');
+    expect(llm.analyzeJob).toHaveBeenCalledWith(expect.anything(), expect.anything(), []);
+    expect(result).toEqual({ objective: 'win the deal' });
+  });
+});
+
+describe('JobsService.assess', () => {
+  it('creates a job from pasted text (deriving the title) and returns job + analysis', async () => {
+    const { svc, dbJob, llm } = makeDeps();
+    const out = await svc.assess('org1', '  Senior React Engineer  \nBuild a dashboard', RES);
+    expect(dbJob.create).toHaveBeenCalledWith({
+      data: { orgId: 'org1', title: 'Senior React Engineer', projectDescription: 'Senior React Engineer  \nBuild a dashboard' },
+    });
+    expect(llm.analyzeJob).toHaveBeenCalled();
+    expect(out).toEqual({ job: { id: 'job-new', title: 'Landing page' }, analysis: { objective: 'win the deal' } });
+  });
+
+  it('falls back to "Untitled opportunity" when the text has no non-empty line', async () => {
+    const { svc, dbJob } = makeDeps();
+    await svc.assess('org1', '   \n  \n');
+    expect(dbJob.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ title: 'Untitled opportunity' }) }),
+    );
+  });
+
+  it('releases quota and rethrows when analysis fails', async () => {
+    const { svc, prisma } = makeDeps({ llm: { analyzeJob: jest.fn().mockRejectedValue(new Error('llm down')) } });
+    await expect(svc.assess('org1', 'Some job text', RES)).rejects.toThrow('llm down');
+    expect(prisma.quotaPeriod.updateMany).toHaveBeenCalled();
+  });
+
+  it('deriveTitle tolerates nullish text (?? "" branch)', () => {
+    const { svc } = makeDeps();
+    expect((svc as any).deriveTitle(undefined)).toBe('Untitled opportunity');
+  });
+});
+
+describe('JobsService.update — learning loop', () => {
+  it('captures memories from a won outcome with a reason', async () => {
+    const facts = [{ text: 'Client valued speed' }];
+    const { svc, llm, memory } = makeDeps({ llm: { extractMemories: jest.fn().mockResolvedValue(facts) } });
+    await svc.update('org1', 'job1', { status: 'won', outcomeReason: 'Delivered fast' } as any);
+    expect(llm.extractMemories).toHaveBeenCalledWith('Delivered fast');
+    expect(memory.recordFact).toHaveBeenCalledWith('org1', { text: 'Client valued speed', source: 'outcome' });
+  });
+
+  it('captures memories from a lost outcome with a reason', async () => {
+    const { svc, llm } = makeDeps({ llm: { extractMemories: jest.fn().mockResolvedValue([]) } });
+    await svc.update('org1', 'job1', { status: 'lost', outcomeReason: 'Too expensive' } as any);
+    expect(llm.extractMemories).toHaveBeenCalledWith('Too expensive');
+  });
+
+  it('does not capture memories when there is no outcome reason', async () => {
+    const { svc, llm } = makeDeps();
+    await svc.update('org1', 'job1', { status: 'won' } as any);
+    expect(llm.extractMemories).not.toHaveBeenCalled();
+  });
+
+  it('swallows a memory-capture failure without failing the update', async () => {
+    const { svc, prisma } = makeDeps({ llm: { extractMemories: jest.fn().mockRejectedValue(new Error('extract fail')) } });
+    const res = await svc.update('org1', 'job1', { status: 'won', outcomeReason: 'reason' } as any);
+    expect(res).toEqual({ id: 'job1', updated: true });
+    expect(prisma.job.update).toHaveBeenCalled();
+  });
 });
