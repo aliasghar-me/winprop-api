@@ -106,7 +106,6 @@ describe('AnalyticsService.bySkill', () => {
       makeJob({ status: 'won', wonAmountUsd: 5000, intelligenceJson: null }),
     ]);
 
-    await expect(service.bySkill('org-1')).resolves.toBeDefined();
     const result = await service.bySkill('org-1');
     expect(result.skills).toHaveLength(0);
   });
@@ -130,7 +129,6 @@ describe('AnalyticsService.bySkill', () => {
       }),
     ]);
 
-    await expect(service.bySkill('org-1')).resolves.toBeDefined();
     const result = await service.bySkill('org-1');
     expect(result.skills).toHaveLength(0);
   });
@@ -184,5 +182,28 @@ describe('AnalyticsService.bySkill', () => {
     const go = result.skills.find((s) => s.skill === 'Go');
     // avg of 4 and 2 = 3 days
     expect(go!.avgCloseDays).toBe(3);
+  });
+
+  it('deduplicates skills per job — duplicate stack entries are counted once', async () => {
+    const createdAt = new Date('2024-01-01T00:00:00Z');
+    const updatedAt = new Date('2024-01-05T00:00:00Z');
+    prisma.job.findMany.mockResolvedValue([
+      makeJob({
+        status: 'won',
+        wonAmountUsd: 5000,
+        intelligenceJson: { stack: ['React', 'React'] },
+        createdAt,
+        updatedAt,
+      }),
+    ]);
+
+    const result = await service.bySkill('org-1');
+    const react = result.skills.find((s) => s.skill === 'React');
+
+    expect(react).toBeDefined();
+    expect(react!.count).toBe(1); // not 2
+    expect(react!.wins).toBe(1); // not 2
+    expect(react!.decided).toBe(1); // not 2
+    expect(react!.revenueWonUsd).toBe(5000);
   });
 });
