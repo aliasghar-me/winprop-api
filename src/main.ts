@@ -1,3 +1,7 @@
+// Load .env for local development BEFORE anything reads process.env. In production
+// the platform injects real env vars; dotenv does not override already-set vars, and
+// .env is gitignored — so this is a no-op there and safe to keep unconditionally.
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { I18nValidationPipe } from 'nestjs-i18n';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
