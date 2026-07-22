@@ -49,11 +49,16 @@ function makeDeps(overrides: { prisma?: any; llm?: any } = {}) {
 const RES = { orgId: 'org1', periodStart: new Date('2026-01-01') };
 
 describe('JobsService.getOwned', () => {
-  it('returns the job when found', async () => {
-    const { svc, dbJob } = makeDeps();
+  it('returns the job when found, including applied and outcome fields', async () => {
+    const jobRow = { ...JOB, wonAmountUsd: null, outcomeReason: null, _count: { documents: 0 } };
+    const findFirst = jest.fn().mockResolvedValue(jobRow);
+    const { svc } = makeDeps({ prisma: { db: { job: { findFirst, findMany: jest.fn(), create: jest.fn() } } } });
     const job = await svc.getOwned('org1', 'job1');
-    expect(dbJob.findFirst).toHaveBeenCalledWith({ where: { id: 'job1', orgId: 'org1' } });
-    expect(job).toEqual(JOB);
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { id: 'job1', orgId: 'org1' },
+      include: { _count: { select: { documents: true } } },
+    });
+    expect(job).toMatchObject({ ...JOB, wonAmountUsd: null, outcomeReason: null, applied: false });
   });
 
   it('throws NOT_FOUND when the job is missing (or belongs to another org)', async () => {
@@ -63,10 +68,36 @@ describe('JobsService.getOwned', () => {
 });
 
 describe('JobsService.list', () => {
-  it('lists org jobs newest-first', () => {
+  it('lists org jobs newest-first and includes documents count', () => {
     const { svc, dbJob } = makeDeps();
     svc.list('org1');
-    expect(dbJob.findMany).toHaveBeenCalledWith({ where: { orgId: 'org1' }, orderBy: { createdAt: 'desc' } });
+    expect(dbJob.findMany).toHaveBeenCalledWith({
+      where: { orgId: 'org1' },
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { documents: true } } },
+    });
+  });
+
+  it('maps wonAmountUsd and outcomeReason onto returned rows', async () => {
+    const jobRow = { ...JOB, wonAmountUsd: 5000, outcomeReason: 'Great fit', _count: { documents: 0 } };
+    const { svc } = makeDeps({ prisma: { db: { job: { findMany: jest.fn().mockResolvedValue([jobRow]), findFirst: jest.fn().mockResolvedValue(JOB), create: jest.fn() } } } });
+    const rows = await svc.list('org1');
+    expect(rows[0].wonAmountUsd).toBe(5000);
+    expect(rows[0].outcomeReason).toBe('Great fit');
+  });
+
+  it('sets applied=false when the job has no documents', async () => {
+    const jobRow = { ...JOB, wonAmountUsd: null, outcomeReason: null, _count: { documents: 0 } };
+    const { svc } = makeDeps({ prisma: { db: { job: { findMany: jest.fn().mockResolvedValue([jobRow]), findFirst: jest.fn().mockResolvedValue(JOB), create: jest.fn() } } } });
+    const rows = await svc.list('org1');
+    expect(rows[0].applied).toBe(false);
+  });
+
+  it('sets applied=true when the job has at least one document', async () => {
+    const jobRow = { ...JOB, wonAmountUsd: null, outcomeReason: null, _count: { documents: 1 } };
+    const { svc } = makeDeps({ prisma: { db: { job: { findMany: jest.fn().mockResolvedValue([jobRow]), findFirst: jest.fn().mockResolvedValue(JOB), create: jest.fn() } } } });
+    const rows = await svc.list('org1');
+    expect(rows[0].applied).toBe(true);
   });
 });
 

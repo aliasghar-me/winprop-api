@@ -157,13 +157,32 @@ export class JobsService {
     return out;
   }
 
-  list(orgId: string) {
-    return this.prisma.db.job.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' } });
+  async list(orgId: string) {
+    const rows = await this.prisma.db.job.findMany({
+      where: { orgId },
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { documents: true } } },
+    });
+    return rows.map(({ _count, ...row }) => ({
+      ...row,
+      wonAmountUsd: row.wonAmountUsd ?? null,
+      outcomeReason: row.outcomeReason ?? null,
+      applied: (_count?.documents ?? 0) > 0,
+    }));
   }
 
   async getOwned(orgId: string, jobId: string) {
-    const job = await this.prisma.db.job.findFirst({ where: { id: jobId, orgId } });
-    if (!job) throw new AppException(404, 'NOT_FOUND', 'errors.jobNotFound');
-    return job;
+    const row = await this.prisma.db.job.findFirst({
+      where: { id: jobId, orgId },
+      include: { _count: { select: { documents: true } } },
+    });
+    if (!row) throw new AppException(404, 'NOT_FOUND', 'errors.jobNotFound');
+    const { _count, ...job } = row;
+    return {
+      ...job,
+      wonAmountUsd: job.wonAmountUsd ?? null,
+      outcomeReason: job.outcomeReason ?? null,
+      applied: (_count?.documents ?? 0) > 0,
+    };
   }
 }
