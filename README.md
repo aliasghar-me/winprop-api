@@ -31,6 +31,35 @@
 $ pnpm install
 ```
 
+## Local development
+
+The API reads config from `process.env`; in production the platform injects it,
+and locally `.env` is loaded automatically on boot (see `src/main.ts`). Copy
+`.env.example` to `.env` and fill in the required values before starting.
+
+```bash
+# 1. Local Postgres (matches DATABASE_URL host localhost:5433 / db "winprop")
+$ docker run -d --name winprop_db \
+    -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=<your-password> -e POSTGRES_DB=winprop \
+    -p 5433:5432 postgres:16-alpine
+
+# 2. Apply migrations + generate the Prisma client
+$ pnpm prisma migrate deploy
+$ pnpm prisma generate
+
+# 3. Seed: super-admin, then an idempotent demo tenant
+#    (demo@winprop.dev / Demo1234! — one org, jobs across the pipeline)
+$ pnpm exec ts-node prisma/seed.ts
+$ pnpm exec ts-node prisma/seed-demo.ts
+
+# 4. Run the API (defaults to :3001); pair with winprop-web on :3100
+$ pnpm run start:dev
+```
+
+Set `LLM_MOCK=true` in `.env` to generate proposals with the built-in mock
+provider (no upstream LLM key or spend), and `AUTH_COOKIE_SAMESITE=lax` for
+http-localhost so the refresh cookie is accepted without `Secure`.
+
 ## Compile and run the project
 
 ```bash
