@@ -113,10 +113,11 @@ export class AnalyticsService {
       const isLost = j.status === 'lost';
       // proxy: updatedAt — stand-in for a future decidedAt field
       const closeDays = isDecided
-        ? (j.updatedAt.getTime() - j.createdAt.getTime()) / MS_PER_DAY
+        ? Math.max(0, (j.updatedAt.getTime() - j.createdAt.getTime()) / MS_PER_DAY)
         : null;
 
-      for (const skill of stack) {
+      const uniqueStack = [...new Set(stack)];
+      for (const skill of uniqueStack) {
         if (!skillMap.has(skill)) {
           skillMap.set(skill, { count: 0, decided: 0, wins: 0, losses: 0, wonAmounts: [], closeDays: [] });
         }
