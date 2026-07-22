@@ -341,5 +341,53 @@ describe('BillingService (unit, fakes)', () => {
       expect(prisma.org.findFirst).not.toHaveBeenCalled();
       expect(prisma.processedEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'evt_2' } }));
     });
+
+    it('maps the professional price id to the professional plan (env + literal fallback)', async () => {
+      process.env.STRIPE_PRICE_PROFESSIONAL = 'price_env_pro';
+      const prisma: any = makePrisma();
+      prisma.org.findFirst.mockResolvedValue({ id: 'o1' });
+      const svc = new BillingService({} as any, prisma);
+      const ev = subEvent({ items: { data: [{ price: { id: 'price_env_pro' } }] } });
+      await (svc as any).processEvent(ev);
+      expect(prisma.org.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ plan: 'professional' }) }));
+    });
+
+    it('maps the agency price id (literal fallback price_agency) to the agency plan', async () => {
+      delete process.env.STRIPE_PRICE_AGENCY;
+      const prisma: any = makePrisma();
+      prisma.org.findFirst.mockResolvedValue({ id: 'o1' });
+      const svc = new BillingService({} as any, prisma);
+      const ev = subEvent({ items: { data: [{ price: { id: 'price_agency' } }] } });
+      await (svc as any).processEvent(ev);
+      expect(prisma.org.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ plan: 'agency' }) }));
+    });
+  });
+
+  describe('ingestEvent fast-path drain failure', () => {
+    const stripeOk = () => ({ webhooks: { constructEvent: jest.fn().mockReturnValue({ id: 'evt_9', type: 'x' }) } });
+
+    it('logs (does not throw) when the fast-path drain rejects with an Error', async () => {
+      const prisma: any = makePrisma();
+      prisma.processedEvent.findUnique.mockResolvedValue(null);
+      prisma.webhookEvent.create.mockResolvedValue({});
+      const svc = new BillingService(stripeOk() as any, prisma);
+      const errSpy = jest.spyOn((svc as any).logger, 'error').mockImplementation(() => undefined);
+      jest.spyOn(svc, 'drainPending').mockRejectedValue(new Error('drain blew up'));
+      await svc.ingestEvent('body', 'sig');
+      await new Promise((res) => setImmediate(res));
+      expect(errSpy.mock.calls.some((c) => String(c[0]).includes('drain blew up'))).toBe(true);
+    });
+
+    it('logs a non-Error fast-path drain rejection verbatim (?? fallback)', async () => {
+      const prisma: any = makePrisma();
+      prisma.processedEvent.findUnique.mockResolvedValue(null);
+      prisma.webhookEvent.create.mockResolvedValue({});
+      const svc = new BillingService(stripeOk() as any, prisma);
+      const errSpy = jest.spyOn((svc as any).logger, 'error').mockImplementation(() => undefined);
+      jest.spyOn(svc, 'drainPending').mockRejectedValue('bare drain string');
+      await svc.ingestEvent('body', 'sig');
+      await new Promise((res) => setImmediate(res));
+      expect(errSpy.mock.calls.some((c) => String(c[0]).includes('bare drain string'))).toBe(true);
+    });
   });
 });

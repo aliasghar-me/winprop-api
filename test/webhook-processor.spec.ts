@@ -45,6 +45,21 @@ describe('WebhookProcessor (unit)', () => {
     expect(errSpy.mock.calls[0][0]).toContain('plain string failure');
   });
 
+  it('fires the interval callback, which drains again on each tick', async () => {
+    jest.useFakeTimers();
+    try {
+      const drain = jest.fn().mockResolvedValue(0);
+      const proc = new WebhookProcessor(makeBilling(drain));
+      await proc.onModuleInit();
+      expect(drain).toHaveBeenCalledTimes(1); // startup tick
+      await jest.advanceTimersByTimeAsync(30_000); // fire the interval callback once
+      expect(drain).toHaveBeenCalledTimes(2);
+      proc.onModuleDestroy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('does not install an interval when WEBHOOK_DRAIN_INTERVAL_MS=0', async () => {
     await jest.isolateModulesAsync(async () => {
       const prev = process.env.WEBHOOK_DRAIN_INTERVAL_MS;

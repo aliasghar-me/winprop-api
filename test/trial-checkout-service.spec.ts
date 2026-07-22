@@ -154,6 +154,21 @@ describe('TrialCheckoutService', () => {
       await expect(svc.claimTrial('cs_1')).rejects.toMatchObject({ code: 'VALIDATION' });
     });
 
+    it('rejects (400) when the customer object carries no id (customer?.id ?? null → null)', async () => {
+      // customer is an object without an `id` → stripeCustomerId resolves to null
+      const stripe: any = stripeWith(completeSession({ customer: { email: 'noid@x.com' } }));
+      const svc = new TrialCheckoutService(stripe, makePrisma(), crypto, makeAuth());
+      await expect(svc.claimTrial('cs_1')).rejects.toMatchObject({ code: 'VALIDATION', translationKey: 'errors.trialSessionInvalid' });
+    });
+
+    it('takes the ternary null branch when customer is a bare string and no details email (L70 false branch)', async () => {
+      // customer_details.email absent → the `??` chain reaches the ternary; customer is a
+      // string so `typeof === "object"` is false → the `: null` branch is taken → email null.
+      const stripe: any = stripeWith(completeSession({ customer: 'cus_str', customer_details: {} }));
+      const svc = new TrialCheckoutService(stripe, makePrisma(), crypto, makeAuth());
+      await expect(svc.claimTrial('cs_1')).rejects.toMatchObject({ code: 'VALIDATION', translationKey: 'errors.trialSessionInvalid' });
+    });
+
     it('provisions a NEW account: verifies email, links Stripe customer, creates trialing subscription, issues tokens', async () => {
       const prisma = makePrisma();
       const auth = makeAuth();

@@ -69,5 +69,8 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Unit + E2E tests + 90% coverage gate
+      - name: Unit tests + 95% coverage gate
         run: pnpm test:cov:all
+
+      - name: E2E tests
+        run: pnpm test:e2e
